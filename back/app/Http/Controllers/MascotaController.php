@@ -48,8 +48,8 @@ class MascotaController extends Controller
         $data = $this->validateMascota($request);
         $mascota = Mascota::find($request->id);
         // verificar si a cambiado el codigo sea unico sin contar la mascota actual
-        if(Mascota::where('codigo', $data['codigo'])->where('id', '!=', $mascota->id)->exists()){
-            
+        if(!Mascota::where('codigo', $data['codigo'])->where('id', '!=', $request->id)->exists()){
+            $mascota->codigo=strtoupper($request->codigo); //$mascota->nombre=$request->nombre;
         }
         
         $mascota->nombre=strtoupper($request->nombre); //$mascota->nombre=$request->nombre;

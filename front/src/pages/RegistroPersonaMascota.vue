@@ -657,7 +657,7 @@ export default {
         this.guardandoMascota = true
         const payload = this.buildMascotaPayload(this.mascotaForm)
         const { data } = this.mascotaForm.id
-          ? await this.$api.post(`mascota/${this.mascotaForm.id}`, payload)
+          ? await this.$api.put(`mascota/${this.mascotaForm.id}`, payload)
           : await this.$api.post('mascota', payload)
 
         const personaResponse = await this.$api.get(`persona/${this.personaForm.id}`)
@@ -695,6 +695,7 @@ export default {
     },
     buildMascotaPayload (form) {
       const payload = new FormData()
+      
       payload.append('persona_id', this.personaForm.id)
       payload.append('codigo', form.codigo || '')
       payload.append('nombre', form.nombre || '')
