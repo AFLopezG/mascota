@@ -21,6 +21,14 @@ class Persona extends Model
         'lat',
         'lng',
         'luz_agua',
+        'correo',
+        'zona',
+        'distrito',
+        'fecha',
+    ];
+
+    protected $casts = [
+        'fecha' => 'date',
     ];
 
     public function mascotas()

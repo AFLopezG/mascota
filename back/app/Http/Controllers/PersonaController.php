@@ -9,9 +9,9 @@ class PersonaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Persona::query()->with(['mascotas.vacunas']);
+        $query = Persona::query()->with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']);
 
-        foreach (['cinit', 'nombre', 'paterno', 'materno'] as $field) {
+        foreach (['cinit', 'nombre', 'paterno', 'materno', 'correo', 'zona', 'distrito'] as $field) {
             if ($request->filled($field)) {
                 $query->whereRaw('UPPER(' . $field . ') LIKE ?', ['%' . $this->normalizeText($request->input($field)) . '%']);
             }
@@ -31,14 +31,14 @@ class PersonaController extends Controller
 
         return response()->json([
             'message' => $wasNew ? 'Persona registrada.' : 'Persona actualizada.',
-            'data' => $persona->fresh(['mascotas.vacunas']),
+            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
         ], $wasNew ? 201 : 200);
     }
 
     public function show(Persona $persona)
     {
         return response()->json([
-            'data' => $persona->load(['mascotas.vacunas']),
+            'data' => $persona->load(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
         ]);
     }
 
@@ -50,7 +50,7 @@ class PersonaController extends Controller
 
         return response()->json([
             'message' => 'Persona actualizada.',
-            'data' => $persona->fresh(['mascotas.vacunas']),
+            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
         ]);
     }
 
@@ -73,7 +73,7 @@ class PersonaController extends Controller
         $cinit = $this->normalizeText($data['cinit'] ?? null);  
         $complemento = $this->normalizeOptionalText($data['complemento'] ?? null);
 
-        $query = Persona::with('mascotas')->where('cinit', $cinit);
+        $query = Persona::with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas'])->where('cinit', $cinit);
 
         if ($complemento !== null && $complemento !== '') {
             $query->where('complemento', $complemento);
@@ -98,6 +98,10 @@ class PersonaController extends Controller
             'lat' => ['nullable', 'string'],
             'lng' => ['nullable', 'string'],
             'luz_agua' => ['nullable', 'string'],
+            'correo' => ['nullable', 'string'],
+            'zona' => ['nullable', 'string'],
+            'distrito' => ['nullable', 'string'],
+            'fecha' => ['nullable', 'date'],
         ]);
     }
 
@@ -114,6 +118,10 @@ class PersonaController extends Controller
         $persona->lat = $this->normalizeOptionalText($data['lat'] ?? null);
         $persona->lng = $this->normalizeOptionalText($data['lng'] ?? null);
         $persona->luz_agua = $this->normalizeOptionalText($data['luz_agua'] ?? null);
+        $persona->correo = $this->normalizeEmail($data['correo'] ?? null);
+        $persona->zona = $this->normalizeOptionalText($data['zona'] ?? null);
+        $persona->distrito = $this->normalizeOptionalText($data['distrito'] ?? null);
+        $persona->fecha = $data['fecha'] ?? null;
     }
 
     private function findByDocument(?string $cinit, ?string $complemento = null): ?Persona
@@ -143,5 +151,12 @@ class PersonaController extends Controller
         $value = trim((string) $value);
 
         return $value === '' ? null : mb_strtoupper($value);
+    }
+
+    private function normalizeEmail(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : mb_strtolower($value);
     }
 }

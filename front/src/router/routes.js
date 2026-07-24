@@ -11,7 +11,11 @@ const routes = [
       { path: 'roles', component: () => import('pages/Roles.vue') },
       { path: 'usuarios', component: () => import('pages/Usuarios.vue') },
       { path: 'registro-persona-mascota', component: () => import('pages/RegistroPersonaMascota.vue') },
-      { path: 'buscar-persona', component: () => import('pages/BusquedaPersona.vue') }
+      { path: 'buscar-persona', component: () => import('pages/BusquedaPersona.vue') },
+      { path: 'especies', component: () => import('pages/Especies.vue') },
+      { path: 'razas', component: () => import('pages/Razas.vue') },
+      { path: 'campania-tipos', component: () => import('pages/CampaniaTipos.vue') },
+      { path: 'categorias', component: () => import('pages/Categorias.vue') }
     ]
   },
 

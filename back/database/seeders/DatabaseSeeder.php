@@ -58,5 +58,9 @@ class DatabaseSeeder extends Seeder
             ['rol_id' => 1, 'permiso_id' => 9],
         ]);
 
+        $this->call([
+            EspecieSeeder::class,
+        ]);
+
     }
 }

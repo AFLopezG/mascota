@@ -72,6 +72,18 @@
                 <div class="col-12 col-md-4">
                   <q-input v-model="personaForm.luz_agua" label="Luz/Agua" outlined dense />
                 </div>
+                <div class="col-12 col-md-4">
+                  <q-input v-model="personaForm.correo" label="Correo" outlined dense type="email" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input v-model="personaForm.zona" label="Zona" outlined dense />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input v-model="personaForm.distrito" label="Distrito" outlined dense />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input v-model="personaForm.fecha" type="date" label="Fecha" outlined dense />
+                </div>
                 <div class="col-12 col-md-2">
                   <q-input v-model="personaForm.lat" label="Latitud" outlined dense readonly />
                 </div>
@@ -88,11 +100,11 @@
                       Haga clic en el mapa o arrastre el marcador para guardar latitud y longitud.
                     </div>
                   </div>
-                  <q-btn outline color="primary" icon="my_location" label="Centrar mapa" @click="syncMapFromForm" />
+                  <q-btn outline color="primary" icon="my_location" label="Centrar mapa" @click="myLocation" />
                 </q-card-section>
                 <q-separator />
                 <q-card-section class="q-pa-none">
-                  <div ref="map" style="height: 400px; width: 100%;"></div>
+                  <div ref="map" id="map" style="height: 400px; width: 100%;"></div>
                 </q-card-section>
               </q-card>
 
@@ -173,7 +185,7 @@
                         <q-input v-model="mascotaForm.nombre" label="Nombre" outlined dense />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.tipo" label="Tipo" outlined dense />
+                        <q-input :model-value="mascotaForm.fec_reg" label="Fecha de registro" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-input v-model="mascotaForm.fec_nac" type="date" label="Fecha de nacimiento" outlined dense />
@@ -182,7 +194,7 @@
                         <q-input v-model.number="mascotaForm.edad" type="number" min="0" label="Edad" outlined dense />
                       </div>
                       <div class="col-12 col-md-3">
-                        <q-input v-model.number="mascotaForm.tamano" label="Tamano" outlined dense />
+                        <q-input v-model="mascotaForm.tamano" label="Tamano" outlined dense />
                       </div>
                       <div class="col-12 col-md-3">
                         <q-input v-model.number="mascotaForm.peso" type="number" step="0.01" label="Peso" outlined dense />
@@ -191,19 +203,43 @@
                         <q-select v-model="mascotaForm.estado" :options="estadoOptions" label="Estado" outlined dense emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.raza" label="Raza" outlined dense />
+                        <q-input :model-value="mascotaForm.especie" label="Especie" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.color" label="Color" outlined dense />
+                        <q-select
+                          v-model="mascotaForm.raza_id"
+                          :options="razaOptions"
+                          label="Raza"
+                          outlined
+                          dense
+                          emit-value
+                          map-options
+                          @update:model-value="sincronizarEspecieDesdeRaza"
+                        />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-select v-model="mascotaForm.sexo" :options="sexoOptions" label="Sexo" outlined dense emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-select v-model="mascotaForm.categoria" :options="categoriaOptions" label="Categoria" outlined dense emit-value map-options />
+                        <q-select v-model="mascotaForm.categoria_id" :options="categoriaOptions" label="Categoria" outlined dense emit-value map-options clearable />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-select v-model="mascotaForm.campania_id" :options="campaniaOptions" label="Campania" outlined dense emit-value map-options clearable />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-input v-model="mascotaForm.color_principal" label="Color principal" outlined dense />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-input v-model="mascotaForm.color_secundario" label="Color secundario" outlined dense />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-input v-model="mascotaForm.particular" label="Particular" outlined dense />
                       </div>
                       <div class="col-12 col-md-4 flex items-center">
                         <q-checkbox v-model="mascotaForm.esterilizado" label="Esterilizado" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-input v-model="mascotaForm.fec_esterilizacion" type="date" label="Fecha de esterilizacion" outlined dense />
                       </div>
                       <div class="col-12">
                         <q-input v-model="mascotaForm.observacion" type="textarea" autogrow label="Observacion" outlined dense />
@@ -291,6 +327,7 @@
 
 <script>
 import L from 'leaflet'
+import moment from 'moment'
 import 'leaflet/dist/leaflet.css'
 
 const emptyPersona = () => ({
@@ -305,25 +342,34 @@ const emptyPersona = () => ({
   emergencia: '',
   lat: '',
   lng: '',
-  luz_agua: ''
+  luz_agua: '',
+  correo: '',
+  zona: '',
+  distrito: '',
+  fecha: ''
 })
 
 const emptyMascota = () => ({
   id: null,
   codigo: '',
   nombre: '',
-  tipo: '',
+  fec_reg: moment().format('YYYY-MM-DD'),
+  especie: '',
   fec_nac: '',
   edad: null,
-  raza: '',
-  color: '',
-  tamano: null,
+  color_principal: '',
+  color_secundario: '',
+  tamano: '',
   peso: null,
-  estado: 'VIVO',
+  estado: 'ACTIVO',
+  particular: '',
   observacion: '',
   sexo: 'MACHO',
-  categoria: 'CASA',
-  esterilizado: false
+  esterilizado: false,
+  fec_esterilizacion: '',
+  campania_id: null,
+  categoria_id: null,
+  raza_id: null
 })
 
 const emptyMascotaFoto = () => ({
@@ -332,25 +378,32 @@ const emptyMascotaFoto = () => ({
   nombre: '',
   foto: null,
   fotoActualUrl: '',
-  tipo: '',
+  fec_reg: moment().format('YYYY-MM-DD'),
+  especie: '',
   fec_nac: '',
   edad: null,
-  raza: '',
-  color: '',
-  tamano: null,
+  color_principal: '',
+  color_secundario: '',
+  tamano: '',
   peso: null,
-  estado: 'VIVO',
+  estado: 'ACTIVO',
+  particular: '',
   observacion: '',
   sexo: 'MACHO',
-  categoria: 'CASA',
-  esterilizado: false
+  esterilizado: false,
+  fec_esterilizacion: '',
+  campania_id: null,
+  categoria_id: null,
+  raza_id: null
 })
 
 export default {
   name: 'RegistroPersonaMascota',
   data () {
     return {
+      tamannios:['PEQUEÑO','MEDIANO','GRANDE','GIGANTE'],
       tab: 'persona',
+      map: null,
       verificandoPersona: false,
       guardandoPersona: false,
       guardandoMascota: false,
@@ -363,34 +416,60 @@ export default {
       mascotaForm: emptyMascota(),
       mascotaFotoForm: emptyMascotaFoto(),
       mascotas: [],
+      especies: [],
+      categorias: [],
+      razas: [],
+      campanias: [],
       mapInstance: null,
       mapMarker: null,
       centro: [-17.969629, -67.114384],
+      lat : -17.969629,
+      lng : -67.114384,
+      zoom: 15,
       estadoOptions: [
-        { label: 'VIVO', value: 'VIVO' },
-        { label: 'FALLECIDO', value: 'FALLECIDO' }
+        { label: 'ACTIVO', value: 'ACTIVO' },
+        { label: 'PERDIDO', value: 'PERDIDO' },
+        { label: 'ENCONTRADO', value: 'ENCONTRADO' },
+        { label: 'FALLECIDO', value: 'FALLECIDO' },
+        { label: 'ADOPTADO', value: 'ADOPTADO' },
+        { label: 'OTRO', value: 'OTRO' }
       ],
       sexoOptions: [
         { label: 'MACHO', value: 'MACHO' },
         { label: 'HEMBRA', value: 'HEMBRA' }
       ],
-      categoriaOptions: [
-        { label: 'CASA', value: 'CASA' },
-        { label: 'EMPRESA', value: 'EMPRESA' },
-        { label: 'OTRO', value: 'OTRO' }
-      ],
       mascotaColumns: [
         { name: 'foto', label: 'FOTO', field: 'foto', align: 'left' },
         { name: 'codigo', label: 'CODIGO', field: 'codigo', align: 'left', sortable: true },
         { name: 'nombre', label: 'NOMBRE', field: 'nombre', align: 'left', sortable: true },
-        { name: 'tipo', label: 'TIPO', field: 'tipo', align: 'left' },
-        { name: 'raza', label: 'RAZA', field: 'raza', align: 'left' },
+        { name: 'especie', label: 'ESPECIE', field: row => row.especie || row.raza?.especie?.nombre || '-', align: 'left' },
+        { name: 'raza', label: 'RAZA', field: row => row.raza?.nombre || '-', align: 'left' },
+        { name: 'categoria', label: 'CATEGORIA', field: row => row.categoria?.nombre || '-', align: 'left' },
+        { name: 'estado', label: 'ESTADO', field: 'estado', align: 'left' },
         { name: 'vacunas', label: 'VACUNAS', field: row => (row.vacunas || []).length, align: 'center' },
         { name: 'acciones', label: 'ACCIONES', field: 'acciones', align: 'right' }
       ]
     }
   },
   computed: {
+    razaOptions () {
+      return this.razas.map(raza => ({
+        label: raza.especie?.nombre ? `${raza.nombre} (${raza.especie.nombre})` : raza.nombre,
+        value: raza.id
+      }))
+    },
+    categoriaOptions () {
+      return this.categorias.map(categoria => ({
+        label: categoria.nombre,
+        value: categoria.id
+      }))
+    },
+    campaniaOptions () {
+      return this.campanias.map(campania => ({
+        label: campania.nombre,
+        value: campania.id
+      }))
+    },
     personaResumen () {
       if (!this.personaForm.id) {
         return 'Sin persona seleccionada'
@@ -421,6 +500,7 @@ export default {
     }
   },
   mounted () {
+    this.cargarCatalogos()
     this.$nextTick(() => {
       if (this.$refs.map) {
         this.cargarmapa()
@@ -428,43 +508,47 @@ export default {
     })
   },
   methods: {
+    async cargarCatalogos () {
+      try {
+        const [especiesRes, categoriasRes, razasRes, campaniasRes] = await Promise.all([
+          this.$api.get('especie'),
+          this.$api.get('categoria'),
+          this.$api.get('raza'),
+          this.$api.get('campania')
+        ])
+
+        this.especies = especiesRes.data || []
+        this.categorias = categoriasRes.data || []
+        this.razas = razasRes.data || []
+        this.campanias = campaniasRes.data || []
+      } catch (error) {
+        this.mostrarMensaje(error?.response?.data?.message || 'No se pudieron cargar los catalogos.', 'negative')
+      }
+    },
+    myLocation () {
+      this.centro = [-17.969629, -67.114384]
+      this.zoom = 15
+
+      if (this.map) {
+        this.map.setView(this.centro, this.zoom)
+        this.actualizarMarcadorMapa(this.lat, this.lng)
+      }
+    },
     verMapa () {
       this.$nextTick(() => {
-        if (this.mapInstance) {
-          this.mapInstance.invalidateSize()
-          return
-        }
-
         if (this.$refs.map) {
           this.cargarmapa()
         }
       })
     },
-    getMapCenter () {
-      const lat = Number.parseFloat(this.personaForm.lat)
-      const lng = Number.parseFloat(this.personaForm.lng)
-
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        return { lat, lng, zoom: 15 }
-      }
-
-      return { lat: this.centro[0], lng: this.centro[1], zoom: 12 }
-    },
     cargarmapa () {
-      if (!this.$refs.map) {
-        return
+      if (this.map) {
+        this.map.remove()
       }
 
-      if (this.mapInstance) {
-        this.mapInstance.remove()
-        this.mapInstance = null
-        this.mapMarker = null
-      }
+      this.map = L.map('map').setView(this.centro, this.zoom)
 
-      const center = this.getMapCenter()
-      const map = L.map(this.$refs.map).setView([center.lat, center.lng], center.zoom)
-      this.mapInstance = map
-
+      // Definir capas base
       const callejero = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OSM contributors'
       })
@@ -475,45 +559,69 @@ export default {
         maxZoom: 25
       })
 
-      callejero.addTo(map)
-      L.control.layers({
+      // Guardar en arreglo para alternar
+      const baseLayers = {
         'Callejero (OSM)': callejero,
-        'Satelite (Esri)': satelite
-      }).addTo(map)
-
-      /*const icon = L.icon({
-        iconUrl: '/img/pin.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-      })*/
-
-      this.mapMarker = L.marker([center.lat, center.lng], { draggable: true }).addTo(map)
-      this.mapMarker.on('dragend', e => {
-        const { lat, lng } = e.target.getLatLng()
-        this.personaForm.lat = lat
-        this.personaForm.lng = lng
-      })
-
-      map.on('click', e => {
-        this.personaForm.lat = e.latlng.lat
-        this.personaForm.lng = e.latlng.lng
-        if (this.mapMarker) {
-          this.mapMarker.setLatLng(e.latlng)
-        }
-      })
-    },
-    syncMapFromForm () {
-      if (!this.mapInstance) {
-        this.$nextTick(() => this.verMapa())
-        return
+        'Satélite (Esri)': satelite
       }
 
-      const center = this.getMapCenter()
-      this.mapInstance.setView([center.lat, center.lng], center.zoom)
+      // Capa inicial
+      callejero.addTo(this.map)
+      L.control.layers(baseLayers).addTo(this.map)
+
+      this.mapMarker = L.marker(this.obtenerLatLngPersona(), { draggable: true }).addTo(this.map)
+        .bindPopup('📍 Ubicación de la persona')
+        .openPopup()
+
+      // Evento: arrastrar marcador
+      this.mapMarker.on('dragend', e => {
+        const { lat: newLat, lng: newLng } = e.target.getLatLng()
+        this.lat = newLat
+        this.lng = newLng
+        this.personaForm.lat = newLat
+        this.personaForm.lng = newLng
+      })
+
+      // Evento: click en el mapa
+      this.map.on('click', e => {
+        this.lat = e.latlng.lat
+        this.lng = e.latlng.lng
+        this.personaForm.lat = e.latlng.lat
+        this.personaForm.lng = e.latlng.lng
+        this.actualizarMarcadorMapa(e.latlng.lat, e.latlng.lng)
+      })
+    },
+    obtenerLatLngPersona () {
+      const lat = this.personaForm.lat !== '' && this.personaForm.lat !== null && this.personaForm.lat !== undefined
+        ? this.personaForm.lat
+        : this.lat
+      const lng = this.personaForm.lng !== '' && this.personaForm.lng !== null && this.personaForm.lng !== undefined
+        ? this.personaForm.lng
+        : this.lng
+
+      return [lat, lng]
+    },
+    actualizarMarcadorMapa (lat = null, lng = null) {
+      const latValue = lat !== null && lat !== undefined
+        ? lat
+        : (this.personaForm.lat !== '' && this.personaForm.lat !== null && this.personaForm.lat !== undefined ? this.personaForm.lat : this.lat)
+      const lngValue = lng !== null && lng !== undefined
+        ? lng
+        : (this.personaForm.lng !== '' && this.personaForm.lng !== null && this.personaForm.lng !== undefined ? this.personaForm.lng : this.lng)
+
+      const latLng = [latValue, lngValue]
 
       if (this.mapMarker) {
-        this.mapMarker.setLatLng([center.lat, center.lng])
+        this.mapMarker.setLatLng(latLng)
+        this.mapMarker.openPopup()
+      } else if (this.map) {
+        this.mapMarker = L.marker(latLng, { draggable: true }).addTo(this.map)
+          .bindPopup('📍 Ubicación de la persona')
+          .openPopup()
+      }
+
+      if (this.map) {
+        this.map.panTo(latLng)
       }
     },
     async verificarPersonaExistente () {
@@ -561,8 +669,15 @@ export default {
         emergencia: persona.emergencia || '',
         lat: persona.lat || '',
         lng: persona.lng || '',
-        luz_agua: persona.luz_agua || ''
+        luz_agua: persona.luz_agua || '',
+        correo: persona.correo || '',
+        zona: persona.zona || '',
+        distrito: persona.distrito || '',
+        fecha: this.formatDateValue(persona.fecha)
       }
+      this.lat = persona.lat !== undefined && persona.lat !== null && persona.lat !== '' ? persona.lat : this.lat
+      this.lng = persona.lng !== undefined && persona.lng !== null && persona.lng !== '' ? persona.lng : this.lng
+      this.actualizarMarcadorMapa(this.lat, this.lng)
 
       this.mascotas = Array.isArray(persona.mascotas)
         ? persona.mascotas.map(mascota => this.normalizarMascota(mascota))
@@ -570,11 +685,14 @@ export default {
 
       this.dialogMascota = false
       this.dialogFotoMascota = false
-      this.syncMapFromForm()
     },
     normalizarMascota (mascota) {
       return {
         ...mascota,
+        especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        razaNombre: mascota.raza?.nombre || '',
+        categoriaNombre: mascota.categoria?.nombre || '',
+        campaniaNombre: mascota.campania?.nombre || '',
         fotoUrl: mascota.foto ? this.buildPublicUrl(`mascotas/${mascota.foto}`) : '',
         vacunas: Array.isArray(mascota.vacunas) ? mascota.vacunas : []
       }
@@ -610,19 +728,25 @@ export default {
         id: mascota.id,
         codigo: mascota.codigo || '',
         nombre: mascota.nombre || '',
-        tipo: mascota.tipo || '',
-        fec_nac: mascota.fec_nac || '',
+        fec_reg: this.formatDateValue(mascota.fec_reg, moment().format('YYYY-MM-DD')),
+        especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        fec_nac: this.formatDateValue(mascota.fec_nac),
         edad: mascota.edad ?? null,
-        raza: mascota.raza || '',
-        color: mascota.color || '',
-        tamano: mascota.tamano ?? null,
+        color_principal: mascota.color_principal || '',
+        color_secundario: mascota.color_secundario || '',
+        tamano: mascota.tamano || '',
         peso: mascota.peso ?? null,
-        estado: mascota.estado || 'VIVO',
+        estado: mascota.estado || 'ACTIVO',
+        particular: mascota.particular || '',
         observacion: mascota.observacion || '',
         sexo: mascota.sexo || 'MACHO',
-        categoria: mascota.categoria || 'CASA',
-        esterilizado: !!mascota.esterilizado
+        esterilizado: !!mascota.esterilizado,
+        fec_esterilizacion: this.formatDateValue(mascota.fec_esterilizacion),
+        campania_id: mascota.campania_id ?? mascota.campania?.id ?? null,
+        categoria_id: mascota.categoria_id ?? mascota.categoria?.id ?? null,
+        raza_id: mascota.raza_id ?? mascota.raza?.id ?? null
       }
+      this.sincronizarEspecieDesdeRaza(this.mascotaForm.raza_id)
       this.dialogMascota = true
     },
     cambiarFotoMascota (mascota) {
@@ -632,19 +756,25 @@ export default {
         nombre: mascota.nombre || '',
         foto: null,
         fotoActualUrl: mascota.fotoUrl || '',
-        tipo: mascota.tipo || '',
-        fec_nac: mascota.fec_nac || '',
+        fec_reg: this.formatDateValue(mascota.fec_reg, moment().format('YYYY-MM-DD')),
+        especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        fec_nac: this.formatDateValue(mascota.fec_nac),
         edad: mascota.edad ?? null,
-        raza: mascota.raza || '',
-        color: mascota.color || '',
-        tamano: mascota.tamano ?? null,
+        color_principal: mascota.color_principal || '',
+        color_secundario: mascota.color_secundario || '',
+        tamano: mascota.tamano || '',
         peso: mascota.peso ?? null,
-        estado: mascota.estado || 'VIVO',
+        estado: mascota.estado || 'ACTIVO',
+        particular: mascota.particular || '',
         observacion: mascota.observacion || '',
         sexo: mascota.sexo || 'MACHO',
-        categoria: mascota.categoria || 'CASA',
-        esterilizado: !!mascota.esterilizado
+        esterilizado: !!mascota.esterilizado,
+        fec_esterilizacion: this.formatDateValue(mascota.fec_esterilizacion),
+        campania_id: mascota.campania_id ?? mascota.campania?.id ?? null,
+        categoria_id: mascota.categoria_id ?? mascota.categoria?.id ?? null,
+        raza_id: mascota.raza_id ?? mascota.raza?.id ?? null
       }
+      this.sincronizarEspecieDesdeRaza(this.mascotaFotoForm.raza_id, true)
       this.dialogFotoMascota = true
     },
     async guardarMascota () {
@@ -695,22 +825,27 @@ export default {
     },
     buildMascotaPayload (form) {
       const payload = new FormData()
-      
+
       payload.append('persona_id', this.personaForm.id)
       payload.append('codigo', form.codigo || '')
       payload.append('nombre', form.nombre || '')
-      payload.append('tipo', form.tipo || '')
+      payload.append('fec_reg', form.fec_reg || '')
+      payload.append('especie', form.especie || '')
       payload.append('fec_nac', form.fec_nac || '')
       payload.append('edad', form.edad ?? '')
-      payload.append('raza', form.raza || '')
-      payload.append('color', form.color || '')
-      payload.append('tamano', form.tamano ?? '')
+      payload.append('color_principal', form.color_principal || '')
+      payload.append('color_secundario', form.color_secundario || '')
+      payload.append('tamano', form.tamano || '')
       payload.append('peso', form.peso ?? '')
-      payload.append('estado', form.estado || 'VIVO')
+      payload.append('particular', form.particular || '')
+      payload.append('estado', form.estado || 'ACTIVO')
       payload.append('observacion', form.observacion || '')
       payload.append('sexo', form.sexo || 'MACHO')
-      payload.append('categoria', form.categoria || 'CASA')
+      payload.append('fec_esterilizacion', form.fec_esterilizacion || '')
       payload.append('esterilizado', form.esterilizado ? '1' : '0')
+      payload.append('campania_id', form.campania_id ?? '')
+      payload.append('categoria_id', form.categoria_id ?? '')
+      payload.append('raza_id', form.raza_id ?? '')
 
       if (form.foto) {
         payload.append('foto', form.foto)
@@ -722,10 +857,28 @@ export default {
 
       return payload
     },
+    sincronizarEspecieDesdeRaza (razaId, isFoto = false) {
+      const raza = this.razas.find(item => Number(item.id) === Number(razaId))
+      const especieNombre = raza?.especie?.nombre || ''
+
+      if (isFoto) {
+        this.mascotaFotoForm.especie = especieNombre
+        return
+      }
+
+      this.mascotaForm.especie = especieNombre
+    },
+    formatDateValue (value, fallback = '') {
+      if (!value) {
+        return fallback
+      }
+
+      const formatted = moment(value)
+      return formatted.isValid() ? formatted.format('YYYY-MM-DD') : fallback
+    },
     resetPersonaForm () {
       this.personaForm = emptyPersona()
       this.mascotas = []
-      this.syncMapFromForm()
     },
     resetMascotaForm () {
       this.mascotaForm = emptyMascota()

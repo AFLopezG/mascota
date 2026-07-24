@@ -57,10 +57,22 @@
                 <q-input :model-value="personaNombre(personaSeleccionada)" label="Nombre completo" dense outlined readonly />
               </div>
               <div class="col-12 col-md-8">
-                <q-input :model-value="personaSeleccionada.direccion" label="Dirección" dense outlined readonly />
+                <q-input :model-value="personaSeleccionada.direccion" label="Direccion" dense outlined readonly />
               </div>
               <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.telefono" label="Teléfono" dense outlined readonly />
+                <q-input :model-value="personaSeleccionada.telefono" label="Telefono" dense outlined readonly />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input :model-value="personaSeleccionada.correo" label="Correo" dense outlined readonly />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input :model-value="personaSeleccionada.zona" label="Zona" dense outlined readonly />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input :model-value="personaSeleccionada.distrito" label="Distrito" dense outlined readonly />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input :model-value="personaSeleccionada.fecha" label="Fecha" dense outlined readonly />
               </div>
             </div>
 
@@ -71,24 +83,30 @@
               <q-expansion-item
                 v-for="mascota in personaSeleccionada.mascotas || []"
                 :key="mascota.id"
-                :label="`${mascota.nombre} - ${mascota.codigo || 'SIN CÓDIGO'}`"
-                :caption="`${mascota.tipo || '-'} | ${mascota.raza || '-'} | ${mascota.estado || '-'}`"
+                :label="`${mascota.nombre} - ${mascota.codigo || 'SIN CODIGO'}`"
+                :caption="`${mascota.especie || mascota.raza?.especie?.nombre || '-'} | ${mascota.raza?.nombre || '-'} | ${mascota.categoria?.nombre || '-'} | ${mascota.estado || '-'}`"
                 expand-separator
               >
                 <q-card flat bordered class="q-ma-sm">
                   <q-card-section>
                     <div class="row q-col-gutter-md">
                       <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.tipo" label="Tipo" dense outlined readonly />
+                        <q-input :model-value="mascota.especie || mascota.raza?.especie?.nombre" label="Especie" dense outlined readonly />
                       </div>
                       <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.raza" label="Raza" dense outlined readonly />
+                        <q-input :model-value="mascota.raza?.nombre" label="Raza" dense outlined readonly />
                       </div>
                       <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.color" label="Color" dense outlined readonly />
+                        <q-input :model-value="mascota.color_principal" label="Color principal" dense outlined readonly />
                       </div>
                       <div class="col-12 col-md-3">
                         <q-input :model-value="mascota.estado" label="Estado" dense outlined readonly />
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <q-input :model-value="mascota.categoria?.nombre" label="Categoria" dense outlined readonly />
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <q-input :model-value="mascota.color_secundario" label="Color secundario" dense outlined readonly />
                       </div>
                     </div>
 
@@ -139,7 +157,7 @@
                 <q-input v-model="vacunaForm.lugar" label="Lugar" outlined dense />
               </div>
               <div class="col-12">
-                <q-input v-model="vacunaForm.observacion" type="textarea" autogrow label="Observación" outlined dense />
+                <q-input v-model="vacunaForm.observacion" type="textarea" autogrow label="Observacion" outlined dense />
               </div>
             </div>
 
@@ -183,14 +201,14 @@ export default {
       columns: [
         { name: 'cinit', label: 'CINIT', field: 'cinit', align: 'left', sortable: true },
         { name: 'nombre', label: 'NOMBRE', field: row => `${row.nombre || ''} ${row.paterno || ''}`.trim(), align: 'left' },
-        { name: 'telefono', label: 'TELÉFONO', field: 'telefono', align: 'left' },
+        { name: 'telefono', label: 'TELEFONO', field: 'telefono', align: 'left' },
         { name: 'mascotas', label: 'MASCOTAS', field: row => (row.mascotas || []).length, align: 'center' }
       ],
       vacunaColumns: [
         { name: 'fecha', label: 'FECHA', field: 'fecha', align: 'left' },
         { name: 'tipo', label: 'TIPO', field: 'tipo', align: 'left' },
         { name: 'lugar', label: 'LUGAR', field: 'lugar', align: 'left' },
-        { name: 'observacion', label: 'OBSERVACIÓN', field: 'observacion', align: 'left' }
+        { name: 'observacion', label: 'OBSERVACION', field: 'observacion', align: 'left' }
       ]
     }
   },

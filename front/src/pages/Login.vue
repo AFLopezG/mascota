@@ -3,7 +3,7 @@
         <div class="wrapper fadeInDown">
   <div id="formContent">
     <!-- Tabs Titles -->
-    <h2 class="texth2" >   TENENCIA DE ANIMALES SISTEMA DE REGISTRO DE MASCOTAS       </h2>
+    <h2 class="texth2" >    SISTEMA DE REGISTRO DE MASCOTAS       </h2>
 
 
     <!-- Icon -->

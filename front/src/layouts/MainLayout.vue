@@ -7,9 +7,8 @@
         <q-toolbar-title>
           <div class="row">
             <div class="" style="margin: 0; padding: 0; vertical-align: middle;"><img src="img/logo.png" style="height: 60px; width: 60px; margin: 0; padding: 0;" /></div>
-            <div style="font-size: 18px;  font-style: italic; font-family: Verdana, Geneva, Tahoma, sans-serif; vertical-align: middle;">SISTEMA SANCION EXPENDIO Y CONSUMO DE BEBIDAS ALCOHOLICAS <br><span style="font-size: 12px;">{{ store.rol.nombre }}</span>
+            <div style="font-size: 18px; font-style: italic; font-family: Verdana, Geneva, Tahoma, sans-serif; vertical-align: middle;">SISTEMA REGISTRO MASCOTAS <br><span style="font-size: 12px;">{{ store.rol.nombre }}</span>
             </div>
-
           </div>
         </q-toolbar-title>
 
@@ -27,12 +26,12 @@
 
         <q-item clickable dense to="/home" exact active-class="bg-primary text-white">
           <q-item-section avatar><q-icon name="home" /></q-item-section>
-          <q-item-section><q-item-label>Principal</q-item-label><q-item-label caption
-              class="text-grey-2"></q-item-label></q-item-section>
-
+          <q-item-section><q-item-label>Principal</q-item-label><q-item-label caption class="text-grey-2"></q-item-label></q-item-section>
         </q-item>
+
         <q-expansion-item active-class="bg-primary text-white" dense exact expand-separator icon="assignment_ind" label="Roles" to="/roles" expand-icon="null" v-if="store.bool_roles" />
         <q-expansion-item active-class="bg-primary text-white" dense exact expand-separator icon="people" label="Usuarios" to="/usuarios" expand-icon="null" v-if="store.bool_usuarios" />
+
         <q-item clickable dense to="/registro-persona-mascota" exact active-class="bg-primary text-white">
           <q-item-section avatar><q-icon name="pets" /></q-item-section>
           <q-item-section>
@@ -40,14 +39,40 @@
             <q-item-label caption class="text-grey-2"></q-item-label>
           </q-item-section>
         </q-item>
+
         <q-item clickable dense to="/buscar-persona" exact active-class="bg-primary text-white">
           <q-item-section avatar><q-icon name="manage_search" /></q-item-section>
           <q-item-section>
-            <q-item-label>Búsqueda</q-item-label>
+            <q-item-label>Busqueda</q-item-label>
             <q-item-label caption class="text-grey-2"></q-item-label>
           </q-item-section>
         </q-item>
 
+        <q-expansion-item
+          active-class="bg-primary text-white"
+          dense
+          expand-separator
+          icon="category"
+          label="Catalogos"
+          expand-icon="null"
+        >
+          <q-item clickable dense to="/especies" exact active-class="bg-primary text-white">
+            <q-item-section avatar><q-icon name="pets" /></q-item-section>
+            <q-item-section><q-item-label>Especies</q-item-label></q-item-section>
+          </q-item>
+          <q-item clickable dense to="/razas" exact active-class="bg-primary text-white">
+            <q-item-section avatar><q-icon name="tag" /></q-item-section>
+            <q-item-section><q-item-label>Razas</q-item-label></q-item-section>
+          </q-item>
+          <q-item clickable dense to="/categorias" exact active-class="bg-primary text-white">
+            <q-item-section avatar><q-icon name="view_list" /></q-item-section>
+            <q-item-section><q-item-label>Categorias</q-item-label></q-item-section>
+          </q-item>
+          <q-item clickable dense to="/campania-tipos" exact active-class="bg-primary text-white">
+            <q-item-section avatar><q-icon name="campaign" /></q-item-section>
+            <q-item-section><q-item-label>CampaniaTipo</q-item-label></q-item-section>
+          </q-item>
+        </q-expansion-item>
       </q-list>
     </q-drawer>
 
@@ -63,26 +88,25 @@ import { globalStore } from 'src/stores/globalStore'
 
 export default defineComponent({
   name: 'MainLayout',
-  data() {
+  data () {
     return {
       leftDrawerOpen: ref(false),
       store: globalStore(),
       valid: false
     }
   },
-  created() {
-    if (!this.store.isLoggedIn)
+  created () {
+    if (!this.store.isLoggedIn) {
       this.$router.push('/')
+    }
   },
-
   methods: {
-    logout() {
+    logout () {
       this.$logout()
     },
-
-    toggleLeftDrawer() {
+    toggleLeftDrawer () {
       this.leftDrawerOpen = !this.leftDrawerOpen
     }
   }
-});
+})
 </script>

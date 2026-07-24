@@ -14,22 +14,31 @@ return new class extends Migration
         Schema::create('mascotas', function (Blueprint $table) {
             $table->id();
             $table->string('codigo')->unique();
+            $table->date('fec_reg');
             $table->string('foto')->nullable();
             $table->string('nombre');
-            $table->string('tipo');
+            $table->string('especie'); //especie
             $table->date('fec_nac')->nullable();
             $table->integer('edad')->nullable();
-            $table->string('raza');
-            $table->string('color');
+            $table->string('color_principal');
+            $table->string('color_secundario')->nullable();
             $table->string('tamano')->nullable();
+            $table->text('particular')->nullable();
             $table->double('peso')->nullable();
-            $table->string('estado')->default('VIVO');
+            $table->string('estado')->default('ACTIVO'); //ACTIVO, PERDIDO, ENCONTRADO, FALLECIDO, ADOPTADO OTRO
             $table->text('observacion')->nullable();
             $table->string('sexo');
-            $table->string('categoria');
             $table->boolean('esterilizado')->default(false);
+            $table->date('fec_esterilizacion')->nullable();
+            $table->unsignedBigInteger('campania_id')->nullable();
+            $table->foreign('campania_id')->references('id')->on('campanias');
+            $table->unsignedBigInteger('categoria_id')->nullable();
+            $table->foreign('categoria_id')->references('id')->on('categorias');
             $table->unsignedBigInteger('persona_id');
             $table->foreign('persona_id')->references('id')->on('personas');
+            $table->unsignedBigInteger('raza_id');
+            $table->foreign('raza_id')->references('id')->on('razas');
+
             $table->timestamps();
         });
     }

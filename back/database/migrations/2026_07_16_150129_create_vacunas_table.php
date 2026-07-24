@@ -16,9 +16,12 @@ return new class extends Migration
             $table->date('fecha');
             $table->string('tipo');
             $table->string('lugar');
+            $table->string('lote')->nullable();
             $table->text('observacion')->nullable();
             $table->unsignedBigInteger('mascota_id');
             $table->foreign('mascota_id')->references('id')->on('mascotas');
+            $table->unsignedBigInteger('campania_id');
+            $table->foreign('campania_id')->references('id')->on('campanias');
             $table->timestamps();
         });
     }

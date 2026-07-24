@@ -24,6 +24,10 @@ return new class extends Migration
             $table->string('lat')->nullable();
             $table->string('lng')->nullable();
             $table->string('luz_agua')->nullable();
+            $table->string('correo')->nullable();
+            $table->string('zona')->nullable();
+            $table->string('distrito')->nullable();
+            $table->date('fecha')->nullable();
             $table->timestamps();
         });
     }

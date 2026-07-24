@@ -11,7 +11,7 @@ class StorePersonaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,21 @@ class StorePersonaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'cinit' => ['required', 'string'],
+            'complemento' => ['nullable', 'string'],
+            'nombre' => ['required', 'string'],
+            'paterno' => ['nullable', 'string'],
+            'materno' => ['nullable', 'string'],
+            'direccion' => ['nullable', 'string'],
+            'telefono' => ['nullable', 'string'],
+            'emergencia' => ['nullable', 'string'],
+            'lat' => ['nullable', 'string'],
+            'lng' => ['nullable', 'string'],
+            'luz_agua' => ['nullable', 'string'],
+            'correo' => ['nullable', 'string'],
+            'zona' => ['nullable', 'string'],
+            'distrito' => ['nullable', 'string'],
+            'fecha' => ['nullable', 'date'],
         ];
     }
 }
