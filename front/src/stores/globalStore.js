@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios';
+
 export const globalStore = defineStore('global', {
   state: () => ({
     counter: 0,
@@ -14,14 +14,34 @@ export const globalStore = defineStore('global', {
     bool_modificar_usuarios: false,
     bool_modificar_password: false,
     bool_activar_usuario: false,
-    isLoggedIn: !!localStorage.getItem('tokenExpendio'),
-    }),
+    bool_especies: false,
+    bool_registrar_especies: false,
+    bool_modificar_especies: false,
+    bool_eliminar_especies: false,
+    bool_razas: false,
+    bool_registrar_razas: false,
+    bool_modificar_razas: false,
+    bool_eliminar_razas: false,
+    bool_categorias: false,
+    bool_registrar_categorias: false,
+    bool_modificar_categorias: false,
+    bool_eliminar_categorias: false,
+    bool_campania_tipos: false,
+    bool_registrar_campania_tipos: false,
+    bool_modificar_campania_tipos: false,
+    bool_eliminar_campania_tipos: false,
+    bool_campanias: false,
+    bool_registrar_campanias: false,
+    bool_modificar_campanias: false,
+    bool_anular_campanias: false,
+    isLoggedIn: !!localStorage.getItem('tokenExpendio')
+  }),
   getters: {
     doubleCount: (state) => state.counter * 2
   },
   actions: {
     increment () {
       this.counter++
-    }
-  }
+    }
+  }
 })

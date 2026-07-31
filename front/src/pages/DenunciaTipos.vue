@@ -2,19 +2,19 @@
   <q-page class="app-page">
     <div class="column q-gutter-lg">
       <AppSectionHeader
-        title="Razas"
-        subtitle="Alta, edicion y baja del catalogo de razas."
-        icon="sym_r_favorite"
+        title="Tipos de denuncia"
+        subtitle="Registro y mantenimiento del catalogo de tipos de denuncia."
+        icon="sym_r_report"
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Recargar" :loading="loading" @click="loadData" />
-          <q-btn v-if="store.bool_registrar_razas" color="primary" icon="sym_r_add" label="Nueva raza" @click="openCreate" />
+          <q-btn color="primary" icon="sym_r_add" label="Nuevo tipo" @click="openCreate" />
         </template>
       </AppSectionHeader>
 
       <q-card class="app-soft-card app-table">
         <q-card-section class="q-pb-none">
-          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar raza..." />
+          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar tipo..." />
         </q-card-section>
 
         <q-card-section class="q-pt-sm">
@@ -27,15 +27,10 @@
             bordered
             dense
           >
-            <template #body-cell-especie="props">
-              <q-td :props="props">
-                {{ props.row.especie?.nombre || '-' }}
-              </q-td>
-            </template>
             <template #body-cell-actions="props">
-              <q-td :props="props">
-                <q-btn v-if="store.bool_modificar_razas" flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
-                <q-btn v-if="store.bool_eliminar_razas" flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
+              <q-td :props="props" class="text-right">
+                <q-btn flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
+                <q-btn flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
               </q-td>
             </template>
           </q-table>
@@ -44,24 +39,14 @@
     </div>
 
     <q-dialog v-model="dialog" persistent>
-      <q-card class="app-soft-card" style="min-width: 460px; width: 100%; max-width: 620px;">
+      <q-card class="app-soft-card" style="min-width: 420px; width: 100%; max-width: 520px;">
         <q-card-section class="bg-primary text-white">
-          <div class="text-h6">{{ form.id ? 'Modificar raza' : 'Registrar raza' }}</div>
+          <div class="text-h6">{{ form.id ? 'Modificar tipo de denuncia' : 'Registrar tipo de denuncia' }}</div>
         </q-card-section>
 
         <q-form @submit.prevent="save">
           <q-card-section class="q-gutter-md">
             <q-input v-model="form.nombre" label="Nombre" outlined dense maxlength="255" />
-            <q-select
-              v-model="form.especie_id"
-              :options="especieOptions"
-              label="Especie"
-              outlined
-              dense
-              emit-value
-              map-options
-            />
-            <q-input v-model="form.descrpcion" type="textarea" autogrow label="Descripcion" outlined dense />
           </q-card-section>
 
           <q-card-actions align="right">
@@ -80,13 +65,11 @@ import { globalStore } from 'src/stores/globalStore'
 
 const emptyForm = () => ({
   id: null,
-  nombre: '',
-  descrpcion: '',
-  especie_id: null
+  nombre: ''
 })
 
 export default {
-  name: 'RazasPage',
+  name: 'DenunciaTiposPage',
   components: {
     AppSectionHeader
   },
@@ -97,43 +80,27 @@ export default {
       saving: false,
       filter: '',
       rows: [],
-      especies: [],
       dialog: false,
       form: emptyForm(),
       columns: [
         { name: 'nombre', label: 'Nombre', field: 'nombre', align: 'left', sortable: true },
-        { name: 'especie', label: 'Especie', field: row => row.especie?.nombre || '-', align: 'left' },
-        { name: 'descrpcion', label: 'Descripcion', field: 'descrpcion', align: 'left' },
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ]
     }
   },
   computed: {
-    especieOptions () {
-      return this.especies.map(especie => ({
-        label: `${especie.nombre} (${especie.codigo})`,
-        value: especie.id
-      }))
-    },
     filteredRows () {
       const term = this.filter.trim().toLowerCase()
       if (!term) {
         return this.rows
       }
 
-      return this.rows.filter(row => {
-        return [
-          row.nombre,
-          row.descrpcion,
-          row.especie?.nombre,
-          row.especie?.codigo
-        ].some(value => String(value || '').toLowerCase().includes(term))
-      })
+      return this.rows.filter(row => String(row.nombre || '').toLowerCase().includes(term))
     }
   },
   created () {
-    if (!this.store.bool_razas) {
-      this.$router.push('/home')
+    if (!this.store.isLoggedIn) {
+      this.$router.push('/')
       return
     }
 
@@ -143,15 +110,10 @@ export default {
     async loadData () {
       this.loading = true
       try {
-        const [razasRes, especiesRes] = await Promise.all([
-          this.$api.get('raza'),
-          this.$api.get('especie')
-        ])
-
-        this.rows = Array.isArray(razasRes.data) ? razasRes.data : []
-        this.especies = Array.isArray(especiesRes.data) ? especiesRes.data : []
+        const { data } = await this.$api.get('denuncia-tipo')
+        this.rows = Array.isArray(data) ? data : []
       } catch (error) {
-        this.notifyError(error, 'No se pudieron cargar las razas.')
+        this.notifyError(error, 'No se pudieron cargar los tipos de denuncia.')
       } finally {
         this.loading = false
       }
@@ -163,24 +125,18 @@ export default {
     openEdit (row) {
       this.form = {
         id: row.id,
-        nombre: row.nombre || '',
-        descrpcion: row.descrpcion || '',
-        especie_id: row.especie_id || row.especie?.id || null
+        nombre: row.nombre || ''
       }
       this.dialog = true
     },
     async save () {
       this.saving = true
       try {
-        const payload = {
-          nombre: this.form.nombre,
-          descrpcion: this.form.descrpcion,
-          especie_id: this.form.especie_id
-        }
+        const payload = { nombre: this.form.nombre }
 
         const { data } = this.form.id
-          ? await this.$api.put(`raza/${this.form.id}`, payload)
-          : await this.$api.post('raza', payload)
+          ? await this.$api.put(`denuncia-tipo/${this.form.id}`, payload)
+          : await this.$api.post('denuncia-tipo', payload)
 
         this.$q.notify({
           message: data.message || 'Guardado correctamente.',
@@ -191,14 +147,14 @@ export default {
         this.dialog = false
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo guardar la raza.')
+        this.notifyError(error, 'No se pudo guardar el tipo de denuncia.')
       } finally {
         this.saving = false
       }
     },
     confirmDelete (row) {
       this.$q.dialog({
-        title: 'Eliminar raza',
+        title: 'Eliminar tipo de denuncia',
         message: `Desea eliminar "${row.nombre}"?`,
         cancel: true,
         persistent: true
@@ -206,16 +162,16 @@ export default {
     },
     async remove (row) {
       try {
-        const { data } = await this.$api.delete(`raza/${row.id}`)
+        const { data } = await this.$api.delete(`denuncia-tipo/${row.id}`)
         this.$q.notify({
-          message: data.message || 'Raza eliminada.',
+          message: data.message || 'Tipo de denuncia eliminado.',
           color: 'positive',
           position: 'top',
           timeout: 2000
         })
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo eliminar la raza.')
+        this.notifyError(error, 'No se pudo eliminar el tipo de denuncia.')
       }
     },
     notifyError (error, fallback) {

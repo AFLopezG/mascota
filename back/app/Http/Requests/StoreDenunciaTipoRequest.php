@@ -11,7 +11,7 @@ class StoreDenunciaTipoRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,7 @@ class StoreDenunciaTipoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nombre' => ['required', 'string', 'max:255', 'unique:denuncia_tipos,nombre'],
         ];
     }
 }

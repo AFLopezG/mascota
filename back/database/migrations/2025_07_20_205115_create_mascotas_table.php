@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('mascotas', function (Blueprint $table) {
             $table->id();
             $table->string('codigo')->unique();
+            $table->integer('numero');
             $table->date('fec_reg');
             $table->string('foto')->nullable();
             $table->string('nombre');

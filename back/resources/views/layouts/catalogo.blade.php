@@ -84,6 +84,7 @@
                 <a href="{{ route('catalogos.especies') }}" class="{{ request()->routeIs('catalogos.especies*') ? 'active' : '' }}">Especies</a>
                 <a href="{{ route('catalogos.razas') }}" class="{{ request()->routeIs('catalogos.razas*') ? 'active' : '' }}">Razas</a>
                 <a href="{{ route('catalogos.campania-tipos') }}" class="{{ request()->routeIs('catalogos.campania-tipos*') ? 'active' : '' }}">CampaniaTipo</a>
+                <a href="{{ route('catalogos.campanias') }}" class="{{ request()->routeIs('catalogos.campanias*') ? 'active' : '' }}">Campanias</a>
             </div>
         </div>
 

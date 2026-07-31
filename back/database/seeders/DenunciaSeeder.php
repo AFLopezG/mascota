@@ -12,6 +12,6 @@ class DenunciaSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        // Seeded from the UI in normal operation.
     }
 }

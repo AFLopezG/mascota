@@ -32,8 +32,6 @@ return new class extends Migration
             $table->string('resultado');
             $table->string('obs');
             
-
-
             $table->unsignedBigInteger('raza_id');
             $table->foreign('raza_id')->references('id')->on('razas');
             $table->unsignedBigInteger('user_id');
@@ -54,3 +52,6 @@ return new class extends Migration
         Schema::dropIfExists('denuncias');
     }
 };
+
+
+            

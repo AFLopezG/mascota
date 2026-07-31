@@ -12,6 +12,12 @@ class DenunciaTipoSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        \DB::table('denuncia_tipos')->upsert([
+            ['id' => 1, 'nombre' => 'Mordedura'],
+            ['id' => 2, 'nombre' => 'Agresion'],
+            ['id' => 3, 'nombre' => 'Animal suelto'],
+            ['id' => 4, 'nombre' => 'Maltrato'],
+            ['id' => 5, 'nombre' => 'Otro'],
+        ], ['id'], ['nombre']);
     }
 }

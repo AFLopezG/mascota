@@ -1,147 +1,174 @@
 <template>
-  <q-page class="q-pa-md bg-grey-1">
-    <div class="row q-col-gutter-md">
-      <div class="col-12 col-lg-4">
-        <q-card class="shadow-2">
-          <q-card-section class="bg-secondary text-white">
-            <div class="text-h6">Buscar persona</div>
-            <div class="text-caption">Filtra por CINIT, nombre o apellidos.</div>
-          </q-card-section>
+  <q-page class="app-page">
+    <div class="column q-gutter-lg">
+      <AppSectionHeader
+        title="Busqueda de persona"
+        subtitle="Busca por cedula, selecciona la persona y gestiona mascotas y vacunas."
+        icon="sym_r_manage_search"
+      />
 
-          <q-card-section class="q-gutter-md">
-            <q-input v-model="filtros.cinit" label="CINIT" outlined dense />
-            <q-input v-model="filtros.nombre" label="Nombre" outlined dense />
-            <q-input v-model="filtros.paterno" label="Paterno" outlined dense />
-            <q-input v-model="filtros.materno" label="Materno" outlined dense />
-            <div class="row justify-end q-gutter-sm">
-              <q-btn outline color="primary" label="Limpiar" @click="limpiarFiltro" />
-              <q-btn color="primary" icon="search" label="Buscar" :loading="buscando" @click="buscar" />
-            </div>
-          </q-card-section>
-        </q-card>
+      <div class="row q-col-gutter-lg">
+        <div class="col-12 col-lg-4">
+          <q-card class="app-soft-card">
+            <q-card-section class="bg-secondary text-white">
+              <div class="text-h6">Buscar por cedula</div>
+              <div class="text-caption text-white-7">
+                Escribe la cedula y carga hasta 20 coincidencias.
+              </div>
+            </q-card-section>
 
-        <q-card class="shadow-2 q-mt-md">
-          <q-card-section>
-            <q-table
-              :rows="personas"
-              :columns="columns"
-              row-key="id"
-              dense
-              flat
-              :loading="buscando"
-              :pagination="{ rowsPerPage: 8 }"
-              @row-click="seleccionarPersona"
-            />
-          </q-card-section>
-        </q-card>
-      </div>
+            <q-card-section class="q-gutter-md">
+              <q-select
+                v-model="personaSeleccionadaId"
+                :options="personaOptions"
+                option-label="label"
+                option-value="id"
+                emit-value
+                map-options
+                label="Cedula o nombre"
+                outlined
+                dense
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="300"
+                :loading="buscando"
+                hint="Escribe cédula, nombre paterno o materno para buscar."
+                @filter="filtrarPersonas"
+                @update:model-value="cargarPersonaSeleccionada"
+              />
 
-      <div class="col-12 col-lg-8">
-        <q-card class="shadow-2">
-          <q-card-section class="bg-primary text-white">
-            <div class="text-h6">Detalle de persona</div>
-            <div class="text-caption">
-              {{ personaSeleccionada ? personaNombre(personaSeleccionada) : 'Seleccione un resultado para ver mascotas y vacunas.' }}
-            </div>
-          </q-card-section>
+              <q-banner v-if="!personaOptions.length && !buscando" rounded class="bg-blue-1 text-blue-10">
+                Escribe para buscar personas.
+              </q-banner>
 
-          <q-card-section v-if="personaSeleccionada">
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.cinit" label="CINIT" dense outlined readonly />
+              <div class="row justify-end">
+                <q-btn outline color="primary" label="Limpiar" @click="limpiar" />
               </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.complemento" label="Complemento" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaNombre(personaSeleccionada)" label="Nombre completo" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-8">
-                <q-input :model-value="personaSeleccionada.direccion" label="Direccion" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.telefono" label="Telefono" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.correo" label="Correo" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.zona" label="Zona" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.distrito" label="Distrito" dense outlined readonly />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input :model-value="personaSeleccionada.fecha" label="Fecha" dense outlined readonly />
-              </div>
-            </div>
+            </q-card-section>
+          </q-card>
+        </div>
 
-            <q-separator class="q-my-md" />
+        <div class="col-12 col-lg-8">
+          <q-card class="app-soft-card">
+            <q-card-section class="bg-primary text-white">
+              <div class="text-h6">Detalle de persona</div>
+              <div class="text-caption text-white-7">
+                {{ personaSeleccionada ? personaEtiqueta(personaSeleccionada) : 'Seleccione una persona para ver mascotas y vacunas.' }}
+              </div>
+            </q-card-section>
 
-            <div class="text-subtitle1 q-mb-sm">Mascotas</div>
-            <q-list bordered separator>
-              <q-expansion-item
-                v-for="mascota in personaSeleccionada.mascotas || []"
-                :key="mascota.id"
-                :label="`${mascota.nombre} - ${mascota.codigo || 'SIN CODIGO'}`"
-                :caption="`${mascota.especie || mascota.raza?.especie?.nombre || '-'} | ${mascota.raza?.nombre || '-'} | ${mascota.categoria?.nombre || '-'} | ${mascota.estado || '-'}`"
-                expand-separator
-              >
-                <q-card flat bordered class="q-ma-sm">
-                  <q-card-section>
-                    <div class="row q-col-gutter-md">
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.especie || mascota.raza?.especie?.nombre" label="Especie" dense outlined readonly />
+            <q-card-section v-if="personaSeleccionada" class="q-gutter-lg">
+              <div class="row q-col-gutter-md">
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.cinit" label="Cedula" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.complemento" label="Complemento" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaEtiqueta(personaSeleccionada)" label="Nombre completo" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-8">
+                  <q-input :model-value="personaSeleccionada.direccion" label="Direccion" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.telefono" label="Telefono" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.correo" label="Correo" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.zona" label="Zona" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.distrito" label="Distrito" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="personaSeleccionada.fecha" label="Fecha" dense outlined readonly />
+                </div>
+              </div>
+
+              <q-separator />
+
+              <div class="row items-center justify-between q-gutter-sm">
+                <div>
+                  <div class="text-subtitle1 text-weight-bold">Mascotas</div>
+                  <div class="text-caption text-grey-7">Selecciona una mascota para registrar una vacuna.</div>
+                </div>
+                <q-badge color="primary" rounded>{{ mascotasPersona.length }} mascotas</q-badge>
+              </div>
+
+              <q-banner v-if="!mascotasPersona.length" rounded class="bg-blue-1 text-blue-10">
+                Esta persona no tiene mascotas registradas.
+              </q-banner>
+
+              <q-list v-else bordered separator class="rounded-borders">
+                <q-expansion-item
+                  v-for="mascota in mascotasPersona"
+                  :key="mascota.id"
+                  :label="`${mascota.nombre} - ${mascota.codigo || 'SIN CODIGO'}`"
+                  :caption="`${mascota.especie || mascota.raza?.especie?.nombre || '-'} | ${mascota.raza?.nombre || '-'} | ${mascota.categoria?.nombre || '-'} | ${mascota.estado || '-'}`"
+                  expand-separator
+                >
+                  <q-card flat bordered class="q-ma-sm">
+                    <q-card-section>
+                      <div class="row q-col-gutter-md">
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.especie || mascota.raza?.especie?.nombre" label="Especie" dense outlined readonly />
+                        </div>
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.raza?.nombre" label="Raza" dense outlined readonly />
+                        </div>
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.color_principal" label="Color principal" dense outlined readonly />
+                        </div>
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.estado" label="Estado" dense outlined readonly />
+                        </div>
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.categoria?.nombre" label="Categoria" dense outlined readonly />
+                        </div>
+                        <div class="col-12 col-md-3">
+                          <q-input :model-value="mascota.color_secundario" label="Color secundario" dense outlined readonly />
+                        </div>
                       </div>
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.raza?.nombre" label="Raza" dense outlined readonly />
-                      </div>
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.color_principal" label="Color principal" dense outlined readonly />
-                      </div>
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.estado" label="Estado" dense outlined readonly />
-                      </div>
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.categoria?.nombre" label="Categoria" dense outlined readonly />
-                      </div>
-                      <div class="col-12 col-md-3">
-                        <q-input :model-value="mascota.color_secundario" label="Color secundario" dense outlined readonly />
-                      </div>
-                    </div>
 
-                    <div class="row justify-end q-mt-md">
-                      <q-btn color="positive" icon="vaccines" label="Registrar vacuna" @click="abrirVacuna(mascota)" />
-                    </div>
+                      <div class="row justify-end q-mt-md">
+                        <q-btn color="primary" icon="sym_r_vaccines" label="Registrar vacuna" @click="abrirVacuna(mascota)" />
+                      </div>
 
-                    <q-table
-                      class="q-mt-md"
-                      :rows="mascota.vacunas || []"
-                      :columns="vacunaColumns"
-                      row-key="id"
-                      dense
-                      flat
-                      title="Vacunas registradas"
-                      :pagination="{ rowsPerPage: 5 }"
-                    />
-                  </q-card-section>
-                </q-card>
-              </q-expansion-item>
-            </q-list>
-          </q-card-section>
+                      <q-table
+                        class="q-mt-md"
+                        :rows="mascota.vacunas || []"
+                        :columns="vacunaColumns"
+                        row-key="id"
+                        dense
+                        flat
+                        title="Vacunas registradas"
+                        :pagination="{ rowsPerPage: 5 }"
+                        no-data-label="Sin vacunas registradas"
+                      />
+                    </q-card-section>
+                  </q-card>
+                </q-expansion-item>
+              </q-list>
+            </q-card-section>
 
-          <q-card-section v-else class="text-grey-7">
-            No hay una persona seleccionada.
-          </q-card-section>
-        </q-card>
+            <q-card-section v-else class="text-grey-7">
+              Escribe una cedula, ejecuta la busqueda y selecciona una persona para continuar.
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
     </div>
 
     <q-dialog v-model="showVacuna" persistent full-width>
-      <q-card>
+      <q-card class="app-soft-card">
         <q-card-section class="bg-positive text-white">
           <div class="text-h6">Registrar vacuna</div>
-          <div class="text-caption">{{ mascotaVacuna ? mascotaVacuna.nombre : '' }}</div>
+          <div class="text-caption text-white-7">{{ mascotaVacuna ? mascotaVacuna.nombre : '' }}</div>
         </q-card-section>
 
         <q-card-section>
@@ -163,7 +190,7 @@
 
             <div class="row justify-end q-gutter-sm">
               <q-btn flat label="Cancelar" color="negative" v-close-popup />
-              <q-btn color="positive" type="submit" :loading="guardandoVacuna" label="Guardar vacuna" />
+              <q-btn color="primary" type="submit" :loading="guardandoVacuna" label="Guardar vacuna" />
             </div>
           </q-form>
         </q-card-section>
@@ -174,23 +201,23 @@
 
 <script>
 import moment from 'moment'
+import AppSectionHeader from 'components/AppSectionHeader.vue'
 
 export default {
   name: 'BusquedaPersona',
+  components: {
+    AppSectionHeader
+  },
   data () {
     return {
       buscando: false,
       guardandoVacuna: false,
-      personas: [],
+      personaOptions: [],
+      personaSeleccionadaId: null,
       personaSeleccionada: null,
       showVacuna: false,
       mascotaVacuna: null,
-      filtros: {
-        cinit: '',
-        nombre: '',
-        paterno: '',
-        materno: ''
-      },
+      searchSeq: 0,
       vacunaForm: {
         mascota_id: null,
         fecha: moment().format('YYYY-MM-DD'),
@@ -198,12 +225,6 @@ export default {
         lugar: '',
         observacion: ''
       },
-      columns: [
-        { name: 'cinit', label: 'CINIT', field: 'cinit', align: 'left', sortable: true },
-        { name: 'nombre', label: 'NOMBRE', field: row => `${row.nombre || ''} ${row.paterno || ''}`.trim(), align: 'left' },
-        { name: 'telefono', label: 'TELEFONO', field: 'telefono', align: 'left' },
-        { name: 'mascotas', label: 'MASCOTAS', field: row => (row.mascotas || []).length, align: 'center' }
-      ],
       vacunaColumns: [
         { name: 'fecha', label: 'FECHA', field: 'fecha', align: 'left' },
         { name: 'tipo', label: 'TIPO', field: 'tipo', align: 'left' },
@@ -212,39 +233,100 @@ export default {
       ]
     }
   },
+  computed: {
+    mascotasPersona () {
+      return Array.isArray(this.personaSeleccionada?.mascotas) ? this.personaSeleccionada.mascotas : []
+    }
+  },
   methods: {
-    async buscar () {
+    async filtrarPersonas (val, update, abort) {
+      const term = String(val || '').trim()
+
+      if (!term) {
+        update(() => {
+          this.personaOptions = []
+        })
+        return
+      }
+
+      const currentSeq = ++this.searchSeq
+
       try {
         this.buscando = true
         const { data } = await this.$api.get('persona', {
-          params: this.filtros
+          params: {
+            q: term,
+            limit: 20
+          }
         })
-        this.personas = data || []
-        this.personaSeleccionada = this.personas[0] || null
+
+        if (currentSeq !== this.searchSeq) {
+          abort()
+          return
+        }
+
+        const personas = Array.isArray(data) ? data : []
+        update(() => {
+          this.personaOptions = personas.map(persona => ({
+            ...persona,
+            label: this.personaEtiqueta(persona)
+          }))
+        })
       } catch (error) {
+        if (currentSeq === this.searchSeq) {
+          update(() => {
+            this.personaOptions = []
+          })
+          this.$q.notify({
+            color: 'negative',
+            message: error?.response?.data?.message || 'No se pudo buscar la persona'
+          })
+        } else {
+          abort()
+        }
+      } finally {
+        if (currentSeq === this.searchSeq) {
+          this.buscando = false
+        }
+      }
+    },
+    limpiar () {
+      this.limpiarResultados()
+    },
+    limpiarResultados () {
+      this.personaOptions = []
+      this.personaSeleccionadaId = null
+      this.personaSeleccionada = null
+      this.showVacuna = false
+      this.mascotaVacuna = null
+      this.searchSeq += 1
+    },
+    async cargarPersonaSeleccionada (personaId) {
+      if (!personaId) {
+        this.personaSeleccionada = null
+        return
+      }
+
+      try {
+        this.buscando = true
+        const { data } = await this.$api.get(`persona/${personaId}`)
+        this.personaSeleccionada = data?.data || null
+      } catch (error) {
+        this.personaSeleccionada = null
         this.$q.notify({
           color: 'negative',
-          message: error?.response?.data?.message || 'No se pudo buscar la persona'
+          message: error?.response?.data?.message || 'No se pudo cargar la persona seleccionada'
         })
       } finally {
         this.buscando = false
       }
     },
-    limpiarFiltro () {
-      this.filtros = {
-        cinit: '',
-        nombre: '',
-        paterno: '',
-        materno: ''
-      }
-      this.personas = []
-      this.personaSeleccionada = null
-    },
-    seleccionarPersona (_evt, row) {
-      this.personaSeleccionada = row
-    },
-    personaNombre (persona) {
-      return [persona?.nombre, persona?.paterno, persona?.materno].filter(Boolean).join(' ')
+    personaEtiqueta (persona) {
+      const nombreCompleto = [persona?.nombre, persona?.paterno, persona?.materno]
+        .filter(Boolean)
+        .join(' ')
+
+      return `${persona?.cinit || ''} - ${nombreCompleto || 'Sin nombre'}`
     },
     abrirVacuna (mascota) {
       this.mascotaVacuna = mascota
@@ -266,7 +348,10 @@ export default {
           message: 'Vacuna registrada'
         })
         this.showVacuna = false
-        await this.buscar()
+
+        if (this.personaSeleccionadaId) {
+          await this.cargarPersonaSeleccionada(this.personaSeleccionadaId)
+        }
       } catch (error) {
         this.$q.notify({
           color: 'negative',

@@ -2,65 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DenunciaTipo;
 use App\Http\Requests\StoreDenunciaTipoRequest;
 use App\Http\Requests\UpdateDenunciaTipoRequest;
+use App\Models\DenunciaTipo;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DenunciaTipoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): JsonResponse
     {
-        //
+        return response()->json(DenunciaTipo::orderBy('nombre')->get());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(StoreDenunciaTipoRequest $request): JsonResponse
     {
-        //
+        $denunciaTipo = DenunciaTipo::create($request->validated());
+
+        return response()->json([
+            'message' => 'Tipo de denuncia registrado.',
+            'data' => $denunciaTipo,
+        ], 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreDenunciaTipoRequest $request)
+    public function show(DenunciaTipo $denunciaTipo): JsonResponse
     {
-        //
+        return response()->json([
+            'data' => $denunciaTipo,
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(DenunciaTipo $denunciaTipo)
+    public function update(UpdateDenunciaTipoRequest $request, DenunciaTipo $denunciaTipo): JsonResponse
     {
-        //
+        $denunciaTipo->update($request->validated());
+
+        return response()->json([
+            'message' => 'Tipo de denuncia actualizado.',
+            'data' => $denunciaTipo->fresh(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(DenunciaTipo $denunciaTipo)
+    public function destroy(DenunciaTipo $denunciaTipo): JsonResponse
     {
-        //
-    }
+        $denunciaTipo->delete();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateDenunciaTipoRequest $request, DenunciaTipo $denunciaTipo)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(DenunciaTipo $denunciaTipo)
-    {
-        //
+        return response()->json([
+            'message' => 'Tipo de denuncia eliminado.',
+        ]);
     }
 }

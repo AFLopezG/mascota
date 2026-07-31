@@ -1,10 +1,21 @@
 <template>
-  <q-page class="q-pa-md bg-grey-1">
-    <q-card class="shadow-3">
-      <q-card-section class="bg-primary text-white">
-        <div class="text-h6">Registro de persona y mascota</div>
-        <div class="text-caption">
-          Primero registre o cargue una persona. Luego se habilita el registro y actualizacion de mascota.
+  <q-page class="app-page">
+    <q-card class="app-soft-card">
+      <q-card-section class="app-hero text-white">
+        <div class="row items-center justify-between q-col-gutter-md">
+          <div class="col-12 col-md-8">
+            <div class="text-overline text-white-7">Operacion clinica</div>
+            <div class="text-h5 text-weight-bolder">Registro de persona y mascota</div>
+            <div class="text-body2 q-mt-sm">
+              Primero registre o cargue una persona. Luego se habilita el registro y actualizacion de mascota.
+            </div>
+          </div>
+          <div class="col-12 col-md-auto">
+            <q-chip class="app-brand-chip" square>
+              <q-icon name="sym_r_health_and_safety" class="q-mr-xs" />
+              Flujo asistido
+            </q-chip>
+          </div>
         </div>
       </q-card-section>
 
@@ -17,7 +28,7 @@
           v-model="tab"
           dense
           align="left"
-          class="text-primary"
+          class="text-primary q-mb-md"
           active-color="primary"
           indicator-color="primary"
           @update:model-value="verMapa"
@@ -26,7 +37,7 @@
           <q-tab name="mascota" icon="pets" label="Mascota" :disable="!personaForm.id" />
         </q-tabs>
 
-        <q-tab-panels v-model="tab" animated class="bg-white">
+        <q-tab-panels v-model="tab" animated class="bg-transparent">
           <q-tab-panel name="persona">
             <q-form class="q-gutter-md" @submit.prevent="guardarPersona">
               <div class="row q-col-gutter-md">
@@ -81,9 +92,6 @@
                 <div class="col-12 col-md-4">
                   <q-input v-model="personaForm.distrito" label="Distrito" outlined dense />
                 </div>
-                <div class="col-12 col-md-3">
-                  <q-input v-model="personaForm.fecha" type="date" label="Fecha" outlined dense />
-                </div>
                 <div class="col-12 col-md-2">
                   <q-input v-model="personaForm.lat" label="Latitud" outlined dense readonly />
                 </div>
@@ -92,7 +100,7 @@
                 </div>
               </div>
 
-              <q-card bordered flat class="map-card">
+              <q-card bordered flat class="map-card app-soft-card">
                 <q-card-section class="row items-center justify-between q-gutter-sm">
                   <div>
                     <div class="text-subtitle1">Ubicacion en mapa</div>
@@ -137,6 +145,7 @@
               row-key="id"
               dense
               flat
+              class="app-table"
               :pagination="{ rowsPerPage: 8 }"
             >
               <template #body-cell-foto="props">
@@ -163,7 +172,7 @@
             </q-table>
 
             <q-dialog v-model="dialogMascota" persistent @hide="resetMascotaForm">
-              <q-card class="dialog-card">
+              <q-card class="dialog-card app-soft-card">
                 <q-card-section class="bg-primary text-white row items-center justify-between">
                   <div>
                     <div class="text-h6">{{ mascotaForm.id ? 'Editar mascota' : 'Registrar mascota' }}</div>
@@ -172,20 +181,20 @@
                   <q-btn flat round icon="close" color="white" v-close-popup />
                 </q-card-section>
 
-                <q-card-section class="q-pa-md">
-                  <q-form class="q-gutter-md" @submit.prevent="guardarMascota">
+                <q-card-section class="q-pa-lg">
+                  <q-form ref="mascotaFormRef" class="q-gutter-md" @submit.prevent="guardarMascota">
                     <div class="row q-col-gutter-md items-start">
                       <div class="col-12 col-md-4">
                         <q-input :model-value="personaResumen" label="Persona vinculada" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.codigo" label="Codigo" outlined dense hint="Si se deja vacio se genera automaticamente" />
+                        <q-input v-model.number="mascotaForm.numero" type="number" min="1" label="Numero" outlined dense hint="Opcional: si se deja vacio se autogenera" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-input :model-value="codigoMascotaPreview || 'Se generara automaticamente'" label="Codigo" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-input v-model="mascotaForm.nombre" label="Nombre" outlined dense />
-                      </div>
-                      <div class="col-12 col-md-4">
-                        <q-input :model-value="mascotaForm.fec_reg" label="Fecha de registro" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-input v-model="mascotaForm.fec_nac" type="date" label="Fecha de nacimiento" outlined dense />
@@ -194,7 +203,7 @@
                         <q-input v-model.number="mascotaForm.edad" type="number" min="0" label="Edad" outlined dense />
                       </div>
                       <div class="col-12 col-md-3">
-                        <q-input v-model="mascotaForm.tamano" label="Tamano" outlined dense />
+                        <q-select v-model="mascotaForm.tamano" :options="tamanoOptions" label="Tamano" outlined dense use-input emit-value map-options />
                       </div>
                       <div class="col-12 col-md-3">
                         <q-input v-model.number="mascotaForm.peso" type="number" step="0.01" label="Peso" outlined dense />
@@ -203,17 +212,32 @@
                         <q-select v-model="mascotaForm.estado" :options="estadoOptions" label="Estado" outlined dense emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input :model-value="mascotaForm.especie" label="Especie" outlined dense readonly />
-                      </div>
-                      <div class="col-12 col-md-4">
                         <q-select
-                          v-model="mascotaForm.raza_id"
-                          :options="razaOptions"
-                          label="Raza"
+                          v-model="mascotaForm.especie_id"
+                          :options="especieOptions"
+                          label="Especie"
                           outlined
                           dense
                           emit-value
                           map-options
+                          :rules="[val => !!val || 'Seleccione una especie']"
+                          @update:model-value="onEspecieChange"
+                        />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <q-select
+                          v-model="mascotaForm.raza_id"
+                          :options="razaOptionsFiltradas"
+                          label="Raza"
+                          outlined
+                          dense
+                          use-input
+                          input-debounce="0"
+                          emit-value
+                          map-options
+                          :disable="!mascotaForm.especie_id"
+                          :rules="[val => !!val || 'Seleccione una raza']"
+                          @filter="filtrarRazas"
                           @update:model-value="sincronizarEspecieDesdeRaza"
                         />
                       </div>
@@ -227,19 +251,27 @@
                         <q-select v-model="mascotaForm.campania_id" :options="campaniaOptions" label="Campania" outlined dense emit-value map-options clearable />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.color_principal" label="Color principal" outlined dense />
+                        <q-select v-model="mascotaForm.color_principal" :options="colorOptions" label="Color principal" outlined dense use-input input-debounce="0" emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.color_secundario" label="Color secundario" outlined dense />
+                        <q-select v-model="mascotaForm.color_secundario" :options="colorOptions" label="Color secundario" outlined dense use-input input-debounce="0" emit-value map-options clearable />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-input v-model="mascotaForm.particular" label="Particular" outlined dense />
                       </div>
                       <div class="col-12 col-md-4 flex items-center">
-                        <q-checkbox v-model="mascotaForm.esterilizado" label="Esterilizado" />
+                        <q-checkbox v-model="mascotaForm.esterilizado" label="Esterilizado" @update:model-value="onEsterilizadoChange" />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.fec_esterilizacion" type="date" label="Fecha de esterilizacion" outlined dense />
+                        <q-input
+                          v-model="mascotaForm.fec_esterilizacion"
+                          type="date"
+                          label="Fecha de esterilizacion"
+                          outlined
+                          dense
+                          :disable="!mascotaForm.esterilizado"
+                          :rules="[val => !mascotaForm.esterilizado || !!val || 'Ingrese la fecha de esterilizacion']"
+                        />
                       </div>
                       <div class="col-12">
                         <q-input v-model="mascotaForm.observacion" type="textarea" autogrow label="Observacion" outlined dense />
@@ -263,7 +295,7 @@
             </q-dialog>
 
             <q-dialog v-model="dialogFotoMascota" persistent @hide="resetMascotaFotoForm">
-              <q-card class="dialog-card dialog-card--photo">
+              <q-card class="dialog-card dialog-card--photo app-soft-card">
                 <q-card-section class="bg-secondary text-white row items-center justify-between">
                   <div>
                     <div class="text-h6">Modificar foto</div>
@@ -345,16 +377,17 @@ const emptyPersona = () => ({
   luz_agua: '',
   correo: '',
   zona: '',
-  distrito: '',
-  fecha: ''
+  distrito: ''
 })
 
 const emptyMascota = () => ({
   id: null,
   codigo: '',
+  numero: null,
   nombre: '',
   fec_reg: moment().format('YYYY-MM-DD'),
   especie: '',
+  especie_id: null,
   fec_nac: '',
   edad: null,
   color_principal: '',
@@ -375,11 +408,13 @@ const emptyMascota = () => ({
 const emptyMascotaFoto = () => ({
   id: null,
   codigo: '',
+  numero: null,
   nombre: '',
   foto: null,
   fotoActualUrl: '',
   fec_reg: moment().format('YYYY-MM-DD'),
   especie: '',
+  especie_id: null,
   fec_nac: '',
   edad: null,
   color_principal: '',
@@ -401,7 +436,32 @@ export default {
   name: 'RegistroPersonaMascota',
   data () {
     return {
-      tamannios:['PEQUEÑO','MEDIANO','GRANDE','GIGANTE'],
+      tamanoOptions: [
+        { label: 'PEQUENO', value: 'PEQUENO' },
+        { label: 'MEDIANO', value: 'MEDIANO' },
+        { label: 'GRANDE', value: 'GRANDE' },
+        { label: 'GIGANTE', value: 'GIGANTE' }
+      ],
+      colorOptions: [
+        'BLANCO',
+        'NEGRO',
+        'GRIS',
+        'CAFE',
+        'MARRON',
+        'CREMA',
+        'BEIGE',
+        'ROJO',
+        'NARANJA',
+        'AMARILLO',
+        'AZUL',
+        'VERDE',
+        'DORADO',
+        'PLATEADO',
+        'CHOCOLATE',
+        'ATIGRADO',
+        'MANCHADO',
+        'MOTEADO'
+      ],
       tab: 'persona',
       map: null,
       verificandoPersona: false,
@@ -419,6 +479,7 @@ export default {
       especies: [],
       categorias: [],
       razas: [],
+      razaFiltro: '',
       campanias: [],
       mapInstance: null,
       mapMarker: null,
@@ -452,11 +513,33 @@ export default {
     }
   },
   computed: {
-    razaOptions () {
-      return this.razas.map(raza => ({
-        label: raza.especie?.nombre ? `${raza.nombre} (${raza.especie.nombre})` : raza.nombre,
-        value: raza.id
+    especieOptions () {
+      return this.especies.map(especie => ({
+        label: especie.nombre,
+        value: especie.id
       }))
+    },
+    codigoMascotaPreview () {
+      return this.generarCodigoMascota(this.mascotaForm.especie_id, this.mascotaForm.numero)
+    },
+    razaOptionsFiltradas () {
+      const especieId = this.mascotaForm.especie_id
+      const texto = (this.razaFiltro || '').trim().toLowerCase()
+
+      return this.razas
+        .filter(raza => especieId && Number(raza.especie_id) === Number(especieId))
+        .filter(raza => {
+          if (!texto) {
+            return true
+          }
+
+          const especieNombre = raza.especie?.nombre || ''
+          return `${raza.nombre} ${especieNombre}`.toLowerCase().includes(texto)
+        })
+        .map(raza => ({
+          label: raza.nombre,
+          value: raza.id
+        }))
     },
     categoriaOptions () {
       return this.categorias.map(categoria => ({
@@ -521,6 +604,10 @@ export default {
         this.categorias = categoriasRes.data || []
         this.razas = razasRes.data || []
         this.campanias = campaniasRes.data || []
+
+        if (this.mascotaForm.especie_id) {
+          this.sincronizarEspecieDesdeSeleccion(this.mascotaForm.especie_id)
+        }
       } catch (error) {
         this.mostrarMensaje(error?.response?.data?.message || 'No se pudieron cargar los catalogos.', 'negative')
       }
@@ -673,7 +760,6 @@ export default {
         correo: persona.correo || '',
         zona: persona.zona || '',
         distrito: persona.distrito || '',
-        fecha: this.formatDateValue(persona.fecha)
       }
       this.lat = persona.lat !== undefined && persona.lat !== null && persona.lat !== '' ? persona.lat : this.lat
       this.lng = persona.lng !== undefined && persona.lng !== null && persona.lng !== '' ? persona.lng : this.lng
@@ -690,6 +776,7 @@ export default {
       return {
         ...mascota,
         especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        especie_id: mascota.raza?.especie?.id || null,
         razaNombre: mascota.raza?.nombre || '',
         categoriaNombre: mascota.categoria?.nombre || '',
         campaniaNombre: mascota.campania?.nombre || '',
@@ -724,12 +811,16 @@ export default {
       this.dialogMascota = true
     },
     editarMascota (mascota) {
+      const especieId = mascota.raza?.especie?.id ?? null
+      const especieCodigo = mascota.raza?.especie?.codigo || this.especies.find(item => Number(item.id) === Number(especieId))?.codigo || ''
       this.mascotaForm = {
         id: mascota.id,
         codigo: mascota.codigo || '',
+        numero: this.extraerNumeroDesdeCodigo(mascota.codigo || '', especieCodigo),
         nombre: mascota.nombre || '',
         fec_reg: this.formatDateValue(mascota.fec_reg, moment().format('YYYY-MM-DD')),
         especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        especie_id: especieId,
         fec_nac: this.formatDateValue(mascota.fec_nac),
         edad: mascota.edad ?? null,
         color_principal: mascota.color_principal || '',
@@ -746,6 +837,7 @@ export default {
         categoria_id: mascota.categoria_id ?? mascota.categoria?.id ?? null,
         raza_id: mascota.raza_id ?? mascota.raza?.id ?? null
       }
+      this.sincronizarEspecieDesdeSeleccion(this.mascotaForm.especie_id)
       this.sincronizarEspecieDesdeRaza(this.mascotaForm.raza_id)
       this.dialogMascota = true
     },
@@ -753,11 +845,13 @@ export default {
       this.mascotaFotoForm = {
         id: mascota.id,
         codigo: mascota.codigo || '',
+        numero: this.extraerNumeroDesdeCodigo(mascota.codigo || '', mascota.raza?.especie?.codigo || ''),
         nombre: mascota.nombre || '',
         foto: null,
         fotoActualUrl: mascota.fotoUrl || '',
         fec_reg: this.formatDateValue(mascota.fec_reg, moment().format('YYYY-MM-DD')),
         especie: mascota.especie || mascota.raza?.especie?.nombre || '',
+        especie_id: mascota.raza?.especie?.id ?? null,
         fec_nac: this.formatDateValue(mascota.fec_nac),
         edad: mascota.edad ?? null,
         color_principal: mascota.color_principal || '',
@@ -774,6 +868,7 @@ export default {
         categoria_id: mascota.categoria_id ?? mascota.categoria?.id ?? null,
         raza_id: mascota.raza_id ?? mascota.raza?.id ?? null
       }
+      this.sincronizarEspecieDesdeSeleccion(this.mascotaFotoForm.especie_id, true)
       this.sincronizarEspecieDesdeRaza(this.mascotaFotoForm.raza_id, true)
       this.dialogFotoMascota = true
     },
@@ -784,6 +879,21 @@ export default {
       }
 
       try {
+        const valido = await this.$refs.mascotaFormRef?.validate?.()
+        if (valido === false) {
+          return
+        }
+
+        if (this.mascotaForm.esterilizado && !this.mascotaForm.fec_esterilizacion) {
+          this.mostrarMensaje('Ingrese la fecha de esterilizacion.', 'warning')
+          return
+        }
+
+        if (this.mascotaForm.numero !== null && this.mascotaForm.numero !== '' && this.normalizeMascotaNumero(this.mascotaForm.numero) === null) {
+          this.mostrarMensaje('Ingrese un numero valido para la mascota.', 'warning')
+          return
+        }
+
         this.guardandoMascota = true
         const payload = this.buildMascotaPayload(this.mascotaForm)
         const { data } = this.mascotaForm.id
@@ -795,7 +905,7 @@ export default {
         this.mostrarMensaje(data.message || 'Mascota guardada.', 'success')
       } catch (error) {
         const apiError = error?.response?.data
-        const mensaje = apiError?.errors?.codigo?.[0] || apiError?.message || 'No se pudo guardar la mascota.'
+        const mensaje = apiError?.errors?.numero?.[0] || apiError?.errors?.codigo?.[0] || apiError?.message || 'No se pudo guardar la mascota.'
         this.mostrarMensaje(mensaje, 'negative')
       } finally {
         this.guardandoMascota = false
@@ -827,10 +937,11 @@ export default {
       const payload = new FormData()
 
       payload.append('persona_id', this.personaForm.id)
-      payload.append('codigo', form.codigo || '')
+      payload.append('numero', form.numero ?? '')
       payload.append('nombre', form.nombre || '')
       payload.append('fec_reg', form.fec_reg || '')
       payload.append('especie', form.especie || '')
+      payload.append('especie_id', form.especie_id ?? '')
       payload.append('fec_nac', form.fec_nac || '')
       payload.append('edad', form.edad ?? '')
       payload.append('color_principal', form.color_principal || '')
@@ -857,16 +968,82 @@ export default {
 
       return payload
     },
-    sincronizarEspecieDesdeRaza (razaId, isFoto = false) {
-      const raza = this.razas.find(item => Number(item.id) === Number(razaId))
-      const especieNombre = raza?.especie?.nombre || ''
+    sincronizarEspecieDesdeSeleccion (especieId, isFoto = false) {
+      const especie = this.especies.find(item => Number(item.id) === Number(especieId))
+      const especieNombre = especie?.nombre || ''
+      const especieValue = especie?.id ?? null
 
       if (isFoto) {
         this.mascotaFotoForm.especie = especieNombre
+        this.mascotaFotoForm.especie_id = especieValue
         return
       }
 
       this.mascotaForm.especie = especieNombre
+      this.mascotaForm.especie_id = especieValue
+    },
+    generarCodigoMascota (especieId, numero) {
+      const especie = this.especies.find(item => Number(item.id) === Number(especieId))
+      const especieCodigo = (especie?.codigo || '').toString().trim().toUpperCase()
+      const numeroValue = this.normalizeMascotaNumero(numero)
+
+      if (!especieCodigo || numeroValue === null) {
+        return ''
+      }
+
+      return `${especieCodigo}-${numeroValue}`
+    },
+    normalizeMascotaNumero (numero) {
+      if (numero === null || numero === undefined || numero === '') {
+        return null
+      }
+
+      const parsed = Number.parseInt(numero, 10)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    },
+    extraerNumeroDesdeCodigo (codigo, especieCodigo) {
+      const codigoNormalizado = (codigo || '').trim().toUpperCase()
+      const prefijo = (especieCodigo || '').trim().toUpperCase()
+
+      if (!codigoNormalizado || !prefijo || !codigoNormalizado.startsWith(prefijo)) {
+        return null
+      }
+
+      const resto = codigoNormalizado.slice(prefijo.length).replace(/^[\s-]+/, '')
+      const parsed = Number.parseInt(resto, 10)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    },
+    sincronizarEspecieDesdeRaza (razaId, isFoto = false) {
+      const raza = this.razas.find(item => Number(item.id) === Number(razaId))
+      const especieNombre = raza?.especie?.nombre || ''
+      const especieId = raza?.especie?.id || null
+
+      if (isFoto) {
+        this.mascotaFotoForm.especie = especieNombre
+        if (!this.mascotaFotoForm.especie_id) {
+          this.mascotaFotoForm.especie_id = especieId
+        }
+        return
+      }
+
+      this.mascotaForm.especie = especieNombre
+      if (!this.mascotaForm.especie_id) {
+        this.mascotaForm.especie_id = especieId
+      }
+    },
+    onEspecieChange (especieId) {
+      this.razaFiltro = ''
+      this.mascotaForm.raza_id = null
+      this.sincronizarEspecieDesdeSeleccion(especieId)
+    },
+    onEsterilizadoChange (value) {
+      if (!value) {
+        this.mascotaForm.fec_esterilizacion = ''
+      }
+    },
+    filtrarRazas (val, update) {
+      this.razaFiltro = val || ''
+      update(() => {})
     },
     formatDateValue (value, fallback = '') {
       if (!value) {
@@ -882,6 +1059,7 @@ export default {
     },
     resetMascotaForm () {
       this.mascotaForm = emptyMascota()
+      this.razaFiltro = ''
     },
     resetMascotaFotoForm () {
       this.mascotaFotoForm = emptyMascotaFoto()

@@ -11,7 +11,7 @@ class UpdateCampaniaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class UpdateCampaniaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nombre' => ['required', 'string', 'max:255'],
+            'fec_ini' => ['required', 'date'],
+            'fec_fin' => ['required', 'date', 'after_or_equal:fec_ini'],
+            'lugar' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:1000'],
+            'estado' => ['nullable', 'string', 'in:ACTIVA,ANULADA', 'max:50'],
+            'campania_tipo_id' => ['required', 'integer', 'exists:campania_tipos,id'],
         ];
     }
 }

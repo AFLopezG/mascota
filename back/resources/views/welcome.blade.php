@@ -46,6 +46,7 @@
             <a href="{{ route('catalogos.especies') }}">Especies</a>
             <a href="{{ route('catalogos.razas') }}">Razas</a>
             <a href="{{ route('catalogos.campania-tipos') }}">CampaniaTipo</a>
+            <a href="{{ route('catalogos.campanias') }}">Campanias</a>
         </div>
     </main>
 </body>

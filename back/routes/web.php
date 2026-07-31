@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampaniaTipoController;
 use App\Http\Controllers\EspecieController;
 use App\Http\Controllers\RazaController;
@@ -35,4 +36,11 @@ Route::prefix('catalogos')->group(function () {
     Route::post('/campania-tipos', [CampaniaTipoController::class, 'store'])->name('catalogos.campania-tipos.store');
     Route::get('/campania-tipos/{campaniaTipo}/editar', [CampaniaTipoController::class, 'edit'])->name('catalogos.campania-tipos.edit');
     Route::put('/campania-tipos/{campaniaTipo}', [CampaniaTipoController::class, 'update'])->name('catalogos.campania-tipos.update');
+
+    Route::get('/campanias', [CampaniaController::class, 'manage'])->name('catalogos.campanias');
+    Route::post('/campanias', [CampaniaController::class, 'store'])->name('catalogos.campanias.store');
+    Route::get('/campanias/{campania}/editar', [CampaniaController::class, 'edit'])->name('catalogos.campanias.edit');
+    Route::put('/campanias/{campania}', [CampaniaController::class, 'update'])->name('catalogos.campanias.update');
+    Route::put('/campanias/{campania}/anular', [CampaniaController::class, 'anular'])->name('catalogos.campanias.anular');
+    Route::delete('/campanias/{campania}', [CampaniaController::class, 'destroy'])->name('catalogos.campanias.destroy');
 });

@@ -9,6 +9,9 @@ use App\Http\Controllers\PersonaController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\RazaController;
 use App\Http\Controllers\CampaniaTipoController;
+use App\Http\Controllers\DenunciaController;
+use App\Http\Controllers\DenunciaTipoController;
+use App\Http\Controllers\ProcesoController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacunaController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +32,12 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::get('/raza', [RazaController::class, 'index']);
     Route::get('/campania-tipo', [CampaniaTipoController::class, 'index']);
     Route::get('/campania', [CampaniaController::class, 'index']);
+    Route::get('/proceso', [ProcesoController::class, 'index']);
+    Route::post('/denuncia/{denuncia}/logs', [DenunciaController::class, 'storeLog']);
+    Route::post('/campania', [CampaniaController::class, 'store']);
+    Route::put('/campania/{campania}', [CampaniaController::class, 'update']);
+    Route::put('/campania/{campania}/anular', [CampaniaController::class, 'anular']);
+    Route::delete('/campania/{campania}', [CampaniaController::class, 'destroy']);
     Route::post('/categoria', [CategoriaController::class, 'store']);
     Route::put('/categoria/{categoria}', [CategoriaController::class, 'update']);
     Route::delete('/categoria/{categoria}', [CategoriaController::class, 'destroy']);
@@ -48,6 +57,8 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::resource('/persona', PersonaController::class);
     Route::resource('/mascota', MascotaController::class);
     Route::resource('/vacuna', VacunaController::class);
+    Route::resource('/denuncia', DenunciaController::class);
+    Route::resource('/denuncia-tipo', DenunciaTipoController::class);
 
 
 });

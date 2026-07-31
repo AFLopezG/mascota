@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Campania;
 use App\Models\Categoria;
+use App\Http\Requests\StoreMascotaRequest;
+use App\Http\Requests\UpdateMascotaRequest;
+use App\Models\Especie;
 use App\Models\Mascota;
 use App\Models\Persona;
 use App\Models\Raza;
@@ -25,13 +28,13 @@ class MascotaController extends Controller
         return $query->orderBy('nombre')->get();
     }
 
-    public function store(Request $request)
+    public function store(StoreMascotaRequest $request)
     {
-        $data = $this->validateMascota($request);
+        $data = $request->validated();
         $persona = Persona::findOrFail($data['persona_id']);
 
         $mascota = new Mascota();
-        $mascota->codigo = $this->resolveCodigoForStore($data['codigo'] ?? null);
+        $mascota->codigo = $this->resolveCodigoForStore($data);
         $this->fillMascota($mascota, $data, $request);
         $mascota->persona_id = $persona->id;
         $mascota->save();
@@ -49,10 +52,10 @@ class MascotaController extends Controller
         ]);
     }
 
-    public function update(Request $request, Mascota $mascota)
+    public function update(UpdateMascotaRequest $request, Mascota $mascota)
     {
-        $data = $this->validateMascota($request);
-        $mascota->codigo = $this->resolveCodigoForUpdate($mascota->id, $data['codigo'] ?? null);
+        $data = $request->validated();
+        $mascota->codigo = $this->resolveCodigoForUpdate($mascota, $data);
         $this->fillMascota($mascota, $data, $request);
         $mascota->persona_id = $data['persona_id'];
         $mascota->save();
@@ -73,38 +76,11 @@ class MascotaController extends Controller
         ]);
     }
 
-    private function validateMascota(Request $request): array
-    {
-        return $request->validate([
-            'persona_id' => ['required', 'integer', 'exists:personas,id'],
-            'codigo' => ['nullable', 'string', 'max:50'],
-            'fec_reg' => ['nullable', 'date'],
-            'nombre' => ['required', 'string'],
-            'especie' => ['required', 'string'],
-            'fec_nac' => ['nullable', 'date'],
-            'edad' => ['nullable', 'integer', 'min:0'],
-            'color_principal' => ['required', 'string'],
-            'color_secundario' => ['nullable', 'string'],
-            'tamano' => ['nullable', 'string'],
-            'peso' => ['nullable', 'numeric'],
-            'particular' => ['nullable', 'string'],
-            'estado' => ['required', 'string'],
-            'observacion' => ['nullable', 'string'],
-            'sexo' => ['required', 'string'],
-            'esterilizado' => ['nullable', 'boolean'],
-            'fec_esterilizacion' => ['nullable', 'date'],
-            'campania_id' => ['nullable', 'integer', 'exists:campanias,id'],
-            'categoria_id' => ['nullable', 'integer', 'exists:categorias,id'],
-            'raza_id' => ['required', 'integer', 'exists:razas,id'],
-            'foto' => ['nullable', 'file', 'image', 'max:4096'],
-        ]);
-    }
-
     private function fillMascota(Mascota $mascota, array $data, Request $request): void
     {
         $mascota->nombre = mb_strtoupper(trim($data['nombre']));
         $mascota->fec_reg = $data['fec_reg'] ?? now()->toDateString();
-        $mascota->especie = $this->resolveEspecieName((int) $data['raza_id'], $data['especie'] ?? null);
+        $mascota->especie = $this->resolveEspecieName((int) $data['especie_id'], $data['especie'] ?? null);
         $mascota->fec_nac = $data['fec_nac'] ?? null;
         $mascota->edad = $data['edad'] ?? null;
         $mascota->color_principal = mb_strtoupper(trim($data['color_principal']));
@@ -126,43 +102,104 @@ class MascotaController extends Controller
         }
     }
 
-    private function resolveCodigoForStore(?string $codigo): string
+    private function resolveCodigoForStore(array $data): string
     {
-        $codigo = $this->normalizeCodigo($codigo);
-
-        if ($codigo !== '') {
+        if (array_key_exists('numero', $data) && $data['numero'] !== null && $data['numero'] !== '') {
+            $codigo = $this->buildCodigoFromSpeciesAndNumber($data['especie_id'], $data['numero']);
             $this->ensureCodigoDisponible($codigo);
-            return mb_strtoupper($codigo);
+
+            return $codigo;
         }
 
-        do {
-            $codigo = 'M-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
-        } while ($this->codigoExists($codigo));
-
-        return $codigo;
+        return $this->resolveCodigoForSpecies($data['especie_id']);
     }
 
-    private function resolveCodigoForUpdate(int $id, ?string $codigo): string
-    {   
-        $mascota = Mascota::find($id);
-        $codigo = $this->normalizeCodigo($codigo);
+    private function resolveCodigoForUpdate(Mascota $mascota, array $data): string
+    {
+        $currentEspecieId = $mascota->raza?->especie_id
+            ?? Raza::query()->whereKey($mascota->raza_id)->value('especie_id');
 
-        if ($codigo === '') {
+        if (array_key_exists('numero', $data) && $data['numero'] !== null && $data['numero'] !== '') {
+            $codigo = $this->buildCodigoFromSpeciesAndNumber($data['especie_id'], $data['numero']);
+
+            if ($codigo === $this->normalizeCodigo($mascota->codigo)) {
+                return $mascota->codigo;
+            }
+
+            $this->ensureCodigoDisponible($codigo, $mascota->id);
+
+            return $codigo;
+        }
+
+        if ((int) $currentEspecieId === (int) $data['especie_id'] && !empty($mascota->codigo)) {
             return $mascota->codigo;
         }
 
-        if ($codigo === $this->normalizeCodigo($mascota->codigo)) {
-            return $mascota->codigo;
-        }
-
-        $this->ensureCodigoDisponible($codigo, $mascota->id);
-
-        return $codigo;
+        return $this->resolveCodigoForSpecies($data['especie_id'], $mascota->id);
     }
 
     private function normalizeCodigo(?string $codigo): string
     {
         return mb_strtoupper(trim((string) $codigo));
+    }
+
+    private function buildCodigoFromSpeciesAndNumber(int|string $especieId, int|string $numero): string
+    {
+        $especie = Especie::query()->findOrFail($especieId);
+        $numeroValue = filter_var($numero, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if ($numeroValue === false) {
+            throw ValidationException::withMessages([
+                'numero' => 'Ingrese un numero valido para la mascota.',
+            ]);
+        }
+
+        return mb_strtoupper(trim($especie->codigo)) . '-' . $numeroValue;
+    }
+
+    private function resolveCodigoForSpecies(int|string $especieId, ?int $ignoreMascotaId = null): string
+    {
+        $especie = Especie::query()->findOrFail($especieId);
+        $prefix = mb_strtoupper(trim($especie->codigo)) . '-';
+        $nextNumber = $this->nextMascotaNumberForSpecies((int) $especie->id, $prefix, $ignoreMascotaId);
+        $codigo = $prefix . $nextNumber;
+
+        $this->ensureCodigoDisponible($codigo, $ignoreMascotaId);
+
+        return $codigo;
+    }
+
+    private function nextMascotaNumberForSpecies(int $especieId, string $prefix, ?int $ignoreMascotaId = null): int
+    {
+        $query = Mascota::query()
+            ->join('razas', 'mascotas.raza_id', '=', 'razas.id')
+            ->where('razas.especie_id', $especieId)
+            ->select('mascotas.codigo');
+
+        if ($ignoreMascotaId !== null) {
+            $query->where('mascotas.id', '!=', $ignoreMascotaId);
+        }
+
+        $maxNumber = $query->get()
+            ->map(function ($item) use ($prefix) {
+                $codigo = mb_strtoupper(trim((string) $item->codigo));
+
+                if (!str_starts_with($codigo, $prefix)) {
+                    return null;
+                }
+
+                $suffix = substr($codigo, strlen($prefix));
+
+                if (!preg_match('/^\d+$/', $suffix)) {
+                    return null;
+                }
+
+                return (int) $suffix;
+            })
+            ->filter(fn ($value) => $value !== null)
+            ->max();
+
+        return ((int) $maxNumber) + 1;
     }
 
     private function ensureCodigoDisponible(string $codigo, ?int $ignoreId = null): void
@@ -187,10 +224,9 @@ class MascotaController extends Controller
         return $query->exists();
     }
 
-    private function resolveEspecieName(int $razaId, ?string $fallback = null): string
+    private function resolveEspecieName(int $especieId, ?string $fallback = null): string
     {
-        $raza = Raza::with('especie')->find($razaId);
-        $nombreEspecie = $raza?->especie?->nombre;
+        $nombreEspecie = Especie::query()->find($especieId)?->nombre;
 
         if (!empty($nombreEspecie)) {
             return mb_strtoupper(trim($nombreEspecie));

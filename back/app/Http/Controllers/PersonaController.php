@@ -11,13 +11,28 @@ class PersonaController extends Controller
     {
         $query = Persona::query()->with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']);
 
-        foreach (['cinit', 'nombre', 'paterno', 'materno', 'correo', 'zona', 'distrito'] as $field) {
-            if ($request->filled($field)) {
-                $query->whereRaw('UPPER(' . $field . ') LIKE ?', ['%' . $this->normalizeText($request->input($field)) . '%']);
+        $term = $request->filled('q') ? $this->normalizeText($request->input('q')) : null;
+
+        if ($term !== null && $term !== '') {
+            $query->where(function ($subQuery) use ($term) {
+                foreach (['cinit', 'nombre', 'paterno', 'materno'] as $field) {
+                    $subQuery->orWhereRaw('UPPER(' . $field . ') LIKE ?', ['%' . $term . '%']);
+                }
+            });
+        } else {
+            foreach (['cinit', 'nombre', 'paterno', 'materno', 'correo', 'zona', 'distrito'] as $field) {
+                if ($request->filled($field)) {
+                    $query->whereRaw('UPPER(' . $field . ') LIKE ?', ['%' . $this->normalizeText($request->input($field)) . '%']);
+                }
             }
         }
 
-        return $query->orderBy('nombre')->get();
+        $limit = $request->integer('limit');
+        if ($limit > 0) {
+            $query->limit(min($limit, 20));
+        }
+
+        return $query->orderBy('cinit')->get();
     }
 
     public function store(Request $request)
@@ -95,8 +110,8 @@ class PersonaController extends Controller
             'direccion' => ['nullable', 'string'],
             'telefono' => ['nullable', 'string'],
             'emergencia' => ['nullable', 'string'],
-            'lat' => ['nullable', 'string'],
-            'lng' => ['nullable', 'string'],
+            'lat' => ['required'],
+            'lng' => ['required'],
             'luz_agua' => ['nullable', 'string'],
             'correo' => ['nullable', 'string'],
             'zona' => ['nullable', 'string'],

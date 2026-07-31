@@ -12,9 +12,12 @@ const routes = [
       { path: 'usuarios', component: () => import('pages/Usuarios.vue') },
       { path: 'registro-persona-mascota', component: () => import('pages/RegistroPersonaMascota.vue') },
       { path: 'buscar-persona', component: () => import('pages/BusquedaPersona.vue') },
+      { path: 'denuncias', component: () => import('pages/Denuncias.vue') },
+      { path: 'denuncia-tipos', component: () => import('pages/DenunciaTipos.vue') },
       { path: 'especies', component: () => import('pages/Especies.vue') },
       { path: 'razas', component: () => import('pages/Razas.vue') },
       { path: 'campania-tipos', component: () => import('pages/CampaniaTipos.vue') },
+      { path: 'campanias', component: () => import('pages/Campanias.vue') },
       { path: 'categorias', component: () => import('pages/Categorias.vue') }
     ]
   },

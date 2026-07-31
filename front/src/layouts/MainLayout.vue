@@ -1,112 +1,256 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
+  <q-layout view="hHh Lpr fFf" class="app-shell">
+    <q-header class="app-shell__header">
+      <q-toolbar class="q-py-sm q-px-md">
+        <q-btn
+          flat
+          round
+          dense
+          class="lt-lg"
+          icon="sym_r_menu"
+          aria-label="Abrir menú"
+          @click="drawerOpen = !drawerOpen"
+        />
 
-        <q-toolbar-title>
-          <div class="row">
-            <div class="" style="margin: 0; padding: 0; vertical-align: middle;"><img src="img/logo.png" style="height: 60px; width: 60px; margin: 0; padding: 0;" /></div>
-            <div style="font-size: 18px; font-style: italic; font-family: Verdana, Geneva, Tahoma, sans-serif; vertical-align: middle;">SISTEMA REGISTRO MASCOTAS <br><span style="font-size: 12px;">{{ store.rol.nombre }}</span>
+        <div class="row items-center q-gutter-sm no-wrap">
+          <q-avatar rounded size="44px" class="bg-white text-primary">
+            <img src="/img/zoonosis.jpg" alt="Logo del sistema" />
+          </q-avatar>
+          <div class="column">
+            <div class="text-subtitle1 text-weight-bold">Sistema de Informacion Municipal de Canes</div>
+            <div class="text-caption text-white-7">
+              Registro de mascotas, campañas y control operativo
             </div>
           </div>
-        </q-toolbar-title>
-
-        <div>{{ store.user.nombre }}
-          <q-btn flat dense round icon="logout" aria-label="Logout" @click="logout" />
         </div>
+
+        <q-space />
+
+        <div class="gt-sm row items-center q-gutter-sm q-mr-md">
+          <q-chip dense square class="app-brand-chip">
+            <q-icon name="sym_r_badge" size="18px" class="q-mr-xs" />
+            {{ store.rol?.nombre || 'Sin rol' }}
+          </q-chip>
+        </div>
+
+        <q-btn
+          flat
+          round
+          dense
+          class="q-mr-sm"
+          :icon="theme.isDark ? 'sym_r_light_mode' : 'sym_r_dark_mode'"
+          :aria-label="theme.isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          @click="theme.toggleTheme"
+        />
+
+        <q-btn
+          flat
+          round
+          dense
+          icon="sym_r_logout"
+          aria-label="Cerrar sesión"
+          @click="logout"
+        />
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered :width="250">
-      <q-list bordered class="rounded-borders">
-        <q-item-label header class="text-center text-bold bg-red-14 text-white">
-          Opciones
-        </q-item-label>
+    <q-drawer
+      v-model="drawerOpen"
+      :breakpoint="1024"
+      show-if-above
+      bordered
+      class="app-shell__drawer"
+    >
+      <div class="app-shell__drawer-hero">
+        <div class="row items-center q-gutter-sm">
+        </div>
 
-        <q-item clickable dense to="/home" exact active-class="bg-primary text-white">
-          <q-item-section avatar><q-icon name="home" /></q-item-section>
-          <q-item-section><q-item-label>Principal</q-item-label><q-item-label caption class="text-grey-2"></q-item-label></q-item-section>
-        </q-item>
+        <div class="q-mt-md text-body2">
+          <div class="text-weight-medium">{{ store.user?.nombre || 'Usuario' }}</div>
+          <div class="text-caption text-white-7">{{ store.user?.name || '' }}</div>
+        </div>
+      </div>
 
-        <q-expansion-item active-class="bg-primary text-white" dense exact expand-separator icon="assignment_ind" label="Roles" to="/roles" expand-icon="null" v-if="store.bool_roles" />
-        <q-expansion-item active-class="bg-primary text-white" dense exact expand-separator icon="people" label="Usuarios" to="/usuarios" expand-icon="null" v-if="store.bool_usuarios" />
+      <q-scroll-area class="fit">
+        <div class="q-pa-md q-gutter-md">
+          <q-list class="q-gutter-xs">
+            <q-item-label header class="text-uppercase text-weight-bold text-grey-6 q-pb-xs">
+              General
+            </q-item-label>
 
-        <q-item clickable dense to="/registro-persona-mascota" exact active-class="bg-primary text-white">
-          <q-item-section avatar><q-icon name="pets" /></q-item-section>
-          <q-item-section>
-            <q-item-label>Registro</q-item-label>
-            <q-item-label caption class="text-grey-2"></q-item-label>
-          </q-item-section>
-        </q-item>
+            <q-item clickable v-ripple to="/home" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_home" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Inicio</q-item-label>
+                <q-item-label caption>Resumen general del sistema</q-item-label>
+              </q-item-section>
+            </q-item>
 
-        <q-item clickable dense to="/buscar-persona" exact active-class="bg-primary text-white">
-          <q-item-section avatar><q-icon name="manage_search" /></q-item-section>
-          <q-item-section>
-            <q-item-label>Busqueda</q-item-label>
-            <q-item-label caption class="text-grey-2"></q-item-label>
-          </q-item-section>
-        </q-item>
+            <q-item clickable v-ripple to="/registro-persona-mascota" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_health_and_safety" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Registro</q-item-label>
+                <q-item-label caption>Personas y mascotas</q-item-label>
+              </q-item-section>
+            </q-item>
 
-        <q-expansion-item
-          active-class="bg-primary text-white"
-          dense
-          expand-separator
-          icon="category"
-          label="Catalogos"
-          expand-icon="null"
-        >
-          <q-item clickable dense to="/especies" exact active-class="bg-primary text-white">
-            <q-item-section avatar><q-icon name="pets" /></q-item-section>
-            <q-item-section><q-item-label>Especies</q-item-label></q-item-section>
-          </q-item>
-          <q-item clickable dense to="/razas" exact active-class="bg-primary text-white">
-            <q-item-section avatar><q-icon name="tag" /></q-item-section>
-            <q-item-section><q-item-label>Razas</q-item-label></q-item-section>
-          </q-item>
-          <q-item clickable dense to="/categorias" exact active-class="bg-primary text-white">
-            <q-item-section avatar><q-icon name="view_list" /></q-item-section>
-            <q-item-section><q-item-label>Categorias</q-item-label></q-item-section>
-          </q-item>
-          <q-item clickable dense to="/campania-tipos" exact active-class="bg-primary text-white">
-            <q-item-section avatar><q-icon name="campaign" /></q-item-section>
-            <q-item-section><q-item-label>CampaniaTipo</q-item-label></q-item-section>
-          </q-item>
-        </q-expansion-item>
-      </q-list>
+            <q-item clickable v-ripple to="/buscar-persona" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_manage_search" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Búsqueda</q-item-label>
+                <q-item-label caption>Consulta y vacunas</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-ripple to="/denuncias" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_report" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Denuncias</q-item-label>
+                <q-item-label caption>Registro y seguimiento</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-ripple to="/denuncia-tipos" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_view_list" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Tipos de denuncia</q-item-label>
+                <q-item-label caption>Catalogo de denuncias</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="hasAdminAccess" class="q-gutter-xs">
+            <q-item-label header class="text-uppercase text-weight-bold text-grey-6 q-pb-xs">
+              Administración
+            </q-item-label>
+
+            <q-item v-if="store.bool_roles" clickable v-ripple to="/roles" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_assignment_ind" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Roles</q-item-label>
+                <q-item-label caption>Permisos y perfiles</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_usuarios" clickable v-ripple to="/usuarios" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_group" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Usuarios</q-item-label>
+                <q-item-label caption>Accesos y cuentas</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="hasCatalogAccess" class="q-gutter-xs">
+            <q-item-label header class="text-uppercase text-weight-bold text-grey-6 q-pb-xs">
+              Catálogos
+            </q-item-label>
+
+            <q-item v-if="store.bool_especies" clickable v-ripple to="/especies" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_pets" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Especies</q-item-label>
+                <q-item-label caption>Esquema biológico</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_razas" clickable v-ripple to="/razas" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_favorite" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Razas</q-item-label>
+                <q-item-label caption>Clasificación de mascotas</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_categorias" clickable v-ripple to="/categorias" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_category" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Categorías</q-item-label>
+                <q-item-label caption>Segmentación interna</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_campania_tipos" clickable v-ripple to="/campania-tipos" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_campaign" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Tipos de campaña</q-item-label>
+                <q-item-label caption>Clasificación operativa</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_campanias" clickable v-ripple to="/campanias" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_event" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Campañas</q-item-label>
+                <q-item-label caption>Programación y control</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
+      </q-scroll-area>
     </q-drawer>
 
-    <q-page-container>
+    <q-page-container class="app-page-container">
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from 'vue'
+<script setup>
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { globalStore } from 'src/stores/globalStore'
+import { useAppTheme } from 'src/composables/useAppTheme'
 
-export default defineComponent({
-  name: 'MainLayout',
-  data () {
-    return {
-      leftDrawerOpen: ref(false),
-      store: globalStore(),
-      valid: false
-    }
-  },
-  created () {
-    if (!this.store.isLoggedIn) {
-      this.$router.push('/')
-    }
-  },
-  methods: {
-    logout () {
-      this.$logout()
-    },
-    toggleLeftDrawer () {
-      this.leftDrawerOpen = !this.leftDrawerOpen
-    }
+const $q = useQuasar()
+const route = useRoute()
+const router = useRouter()
+const store = globalStore()
+const theme = useAppTheme()
+const drawerOpen = ref($q.screen.gt.md)
+const instance = getCurrentInstance()
+const proxy = instance?.proxy
+
+const hasCatalogAccess = computed(() => (
+  store.bool_especies ||
+  store.bool_razas ||
+  store.bool_categorias ||
+  store.bool_campania_tipos ||
+  store.bool_campanias
+))
+
+const hasAdminAccess = computed(() => store.bool_roles || store.bool_usuarios)
+
+onMounted(() => {
+  if (!store.isLoggedIn) {
+    router.push('/')
   }
 })
+
+watch(() => route.fullPath, () => {
+  if ($q.screen.lt.md) {
+    drawerOpen.value = false
+  }
+})
+
+function logout () {
+  if ($q.screen.lt.md) {
+    drawerOpen.value = false
+  }
+
+  proxy?.$logout?.()
+}
 </script>

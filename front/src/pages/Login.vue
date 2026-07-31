@@ -1,352 +1,155 @@
 <template>
-    <q-layout view="hHr LpR lFf" >
-        <div class="wrapper fadeInDown">
-  <div id="formContent">
-    <!-- Tabs Titles -->
-    <h2 class="texth2" >    SISTEMA DE REGISTRO DE MASCOTAS       </h2>
+  <q-layout view="hHh lpr fff" class="login-shell">
+    <q-page-container>
+      <q-page class="login-page">
+        <div class="login-bg" />
 
+        <div class="row items-center justify-center login-grid q-col-gutter-xl">
+          
 
-    <!-- Icon -->
-    <div class="fadeIn first">
-      <img src="img/escudo.jpg" id="icon" alt="User Icon" />
-    </div>
+          <div class="col-12 col-md-10 col-lg-5 q-pa-lg">
+            <q-card class="app-login-card">
+              <q-card-section class="q-pa-xl">
+                <div class="row justify-between items-start q-gutter-md">
+                  <div>
+                    <div class="text-overline text-primary">Acceso al sistema</div>
+                    <div class="text-h4 text-weight-bold">Iniciar sesion</div>
+                    <div class="text-body2 text-grey-7 q-mt-sm">
+                      Ingresa con tu cuenta autorizada para continuar.
+                    </div>
+                  </div>
 
-    <!-- Login Form -->
-    <q-form @submit.prevent="login">
-      <q-input type="text"  dense id="login" class=" edit1 fadeIn second" name="login" placeholder="Cuenta" v-model="cuenta" />
-      <q-input dense :type="typePassword?'password':'text'" id="password" class=" edit1 fadeIn third" name="login" placeholder="Password" v-model="password" >
-        <template v-slot:append>
-                            <q-icon @click="typePassword=!typePassword" :name="typePassword?'visibility':'visibility_off'" />
-                          </template>
-                        </q-input>
-      <div class="row">
-        <div class="col-12"><q-btn type="submit" class="boton1 fadeIn fourth" label="INGRESAR" /></div>
-      </div>
-    </q-form>
+                  <q-btn
+                    flat
+                    round
+                    :icon="theme.isDark ? 'sym_r_light_mode' : 'sym_r_dark_mode'"
+                    :aria-label="theme.isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                    @click="theme.toggleTheme"
+                  />
+                </div>
 
-      </div>
-</div>
-</q-layout>   
+                <q-form class="q-gutter-md q-mt-lg" @submit.prevent="login">
+                  <q-input
+                    v-model="cuenta"
+                    label="Cuenta"
+                    outlined
+                    dense
+                    autocomplete="username"
+                  >
+                    <template #prepend>
+                      <q-icon name="sym_r_person" />
+                    </template>
+                  </q-input>
+
+                  <q-input
+                    v-model="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    label="Password"
+                    outlined
+                    dense
+                    autocomplete="current-password"
+                  >
+                    <template #prepend>
+                      <q-icon name="sym_r_lock" />
+                    </template>
+                    <template #append>
+                      <q-btn
+                        flat
+                        round
+                        dense
+                        :icon="showPassword ? 'sym_r_visibility_off' : 'sym_r_visibility'"
+                        @click="showPassword = !showPassword"
+                      />
+                    </template>
+                  </q-input>
+
+                  <div class="row items-center justify-between">
+                    <q-checkbox v-model="remember" label="Recordarme" />
+                    <span class="text-caption text-grey-7">Material Design 3</span>
+                  </div>
+
+                  <q-btn
+                    class="full-width"
+                    size="lg"
+                    color="primary"
+                    type="submit"
+                    :loading="loading"
+                    label="Ingresar"
+                    icon="sym_r_login"
+                  />
+                </q-form>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
-<script>
-import {globalStore} from 'src/stores/globalStore'
-  import moment from 'moment'
-  export default {
-    name: 'LoginPage',
-    data () {
-      return {
-        dialogReg:false,
-        user:{},
-        cuenta: '',
-        password: '',
-        remember: false,
-        typePassword: true,
-        loading: false,
-        store:globalStore()
-      }
-    },
-    mounted () {
-      // si ya existe un token en el localStorage, redirigir al usuario a la página de inicio
-      const token = localStorage.getItem('tokenExpendio');
-      if (token && this.store.isLoggedIn) {
-        this.$router.push('/home');
-      } 
-    },
-    methods: {
 
-      login () {
-        this.loading = true
-        this.$api.post('login', {
-          cuenta: this.cuenta,
-          password: this.password
-        }).then(res => {
-          this.$q.notify({
-            message: 'Bienvenido',
-            color: 'positive',
-            icon: 'check_circle',
-            position: 'top'
-          })
-          console.log(res.data)
-          this.$login(res.data)
-        }).catch(error => {
-          console.log(error)
-          this.$q.notify({
-            message: error.response.data?.message || 'Error al iniciar sesión',
-            color: 'negative',
-            position: 'top',
-            timeout: 2000
-          })
-        }).finally(() => {
-          this.loading = false
-        })
-      }
+<script setup>
+defineOptions({
+  name: 'LoginPage'
+})
+
+import { getCurrentInstance, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
+import { api } from 'boot/axios'
+import { globalStore } from 'src/stores/globalStore'
+import { useAppTheme } from 'src/composables/useAppTheme'
+
+const $q = useQuasar()
+const router = useRouter()
+const store = globalStore()
+const theme = useAppTheme()
+const instance = getCurrentInstance()
+const proxy = instance?.proxy
+
+const cuenta = ref(localStorage.getItem('mascota-login-account') || '')
+const password = ref('')
+const remember = ref(true)
+const showPassword = ref(false)
+const loading = ref(false)
+
+onMounted(() => {
+  if (store.isLoggedIn) {
+    router.push('/home')
+  }
+})
+
+async function login () {
+  loading.value = true
+
+  try {
+    const { data } = await api.post('login', {
+      cuenta: cuenta.value,
+      password: password.value
+    })
+
+    $q.notify({
+      message: 'Bienvenido',
+      color: 'positive',
+      icon: 'sym_r_check_circle',
+      position: 'top'
+    })
+
+    if (remember.value) {
+      localStorage.setItem('mascota-login-account', cuenta.value)
+    } else {
+      localStorage.removeItem('mascota-login-account')
     }
+
+    proxy?.$login?.(data)
+  } catch (error) {
+    $q.notify({
+      message: error?.response?.data?.message || 'Error al iniciar sesion',
+      color: 'negative',
+      position: 'top',
+      timeout: 2500
+    })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
-<style>
-@import url('https://fonts.googleapis.com/css?family=Poppins');
-
-/* BASIC */
-
-
-
-body {
-  font-family: "Poppins", sans-serif;
-  height: 100vh;
-}
-
-a {
-  color: #92badd;
-  display:inline-block;
-  text-decoration: none;
-  font-weight: 400;
-}
-
-.texth2 {
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  text-transform: uppercase;
-  display:inline-block;
-  margin: 10px 8px 10px 8px; 
-  color: #414040;
-  line-height:40px
-}
-
-
-/* STRUCTURE */
-
-.wrapper {
-  display: flex;
-  align-items: center;
-  flex-direction: column; 
-  justify-content: center;
-  width: 100%;
-  min-height: 100%;
-  padding: 20px;
-}
-
-#formContent {
-  -webkit-border-radius: 10px 10px 10px 10px;
-  border-radius: 10px 10px 10px 10px;
-  background: #fff;
-  padding: 10px;
-  width: 90%;
-  max-width: 450px;
-  position: relative;
-  padding: 0px;
-  -webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-  box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-  text-align: center;
-}
-
-#formFooter {
-  background-color: #f6f6f6;
-  border-top: 1px solid #dce8f1;
-  padding: 25px;
-  text-align: center;
-  -webkit-border-radius: 0 0 10px 10px;
-  border-radius: 0 0 10px 10px;
-}
-
-
-
-/* TABS */
-
-h2.inactive {
-  color: #cccccc;
-}
-
-h2.active {
-  color: #0d0d0d;
-  border-bottom: 2px solid #5fbae9;
-}
-
-
-
-/* FORM TYPOGRAPHY*/
-
-.boton1 {
-  background-color: #56baed;
-  border: none;
-  color: white;
-  padding: 15px 50px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  text-transform: uppercase;
-  font-size: 13px;
-  -webkit-box-shadow: 0 10px 30px 0 rgba(95,186,233,0.4);
-  box-shadow: 0 10px 30px 0 rgba(95,186,233,0.4);
-  -webkit-border-radius: 5px 5px 5px 5px;
-  border-radius: 5px 5px 5px 5px;
-  margin: 5px 20px 40px 20px;
-  -webkit-transition: all 0.3s ease-in-out;
-  -moz-transition: all 0.3s ease-in-out;
-  -ms-transition: all 0.3s ease-in-out;
-  -o-transition: all 0.3s ease-in-out;
-  transition: all 0.3s ease-in-out;
-}
-
-input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover  {
-  background-color: #39ace7;
-}
-
-input[type=button]:active, input[type=submit]:active, input[type=reset]:active  {
-  -moz-transform: scale(0.95);
-  -webkit-transform: scale(0.95);
-  -o-transform: scale(0.95);
-  -ms-transform: scale(0.95);
-  transform: scale(0.95);
-}
-
-.edit1 {
-  background-color: #f6f6f6;
-  border: none;
-  color: #0d0d0d;
-  padding: 15px 16px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 5px;
-  width: 85%;
-  border: 2px solid #f6f6f6;
-  -webkit-transition: all 0.5s ease-in-out;
-  -moz-transition: all 0.5s ease-in-out;
-  -ms-transition: all 0.5s ease-in-out;
-  -o-transition: all 0.5s ease-in-out;
-  transition: all 0.5s ease-in-out;
-  -webkit-border-radius: 15px 15px 15px 15px;
-  border-radius: 15px 15px 15px 15px;
-}
-
-input[type=text]:focus {
-  background-color: #fff;
-  border-bottom: 2px solid #aaf9fc;
-}
-
-input[type=text]:placeholder {
-  color: #cccccc;
-}
-
-
-
-/* ANIMATIONS */
-
-/* Simple CSS3 Fade-in-down Animation */
-.fadeInDown {
-  -webkit-animation-name: fadeInDown;
-  animation-name: fadeInDown;
-  -webkit-animation-duration: 1s;
-  animation-duration: 1s;
-  -webkit-animation-fill-mode: both;
-  animation-fill-mode: both;
-}
-
-@-webkit-keyframes fadeInDown {
-  0% {
-    opacity: 0;
-    -webkit-transform: translate3d(0, -100%, 0);
-    transform: translate3d(0, -100%, 0);
-  }
-  100% {
-    opacity: 1;
-    -webkit-transform: none;
-    transform: none;
-  }
-}
-
-@keyframes fadeInDown {
-  0% {
-    opacity: 0;
-    -webkit-transform: translate3d(0, -100%, 0);
-    transform: translate3d(0, -100%, 0);
-  }
-  100% {
-    opacity: 1;
-    -webkit-transform: none;
-    transform: none;
-  }
-}
-
-/* Simple CSS3 Fade-in Animation */
-@-webkit-keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-@-moz-keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-
-.fadeIn {
-  opacity:0;
-  -webkit-animation:fadeIn ease-in 1;
-  -moz-animation:fadeIn ease-in 1;
-  animation:fadeIn ease-in 1;
-
-  -webkit-animation-fill-mode:forwards;
-  -moz-animation-fill-mode:forwards;
-  animation-fill-mode:forwards;
-
-  -webkit-animation-duration:1s;
-  -moz-animation-duration:1s;
-  animation-duration:1s;
-}
-
-.fadeIn.first {
-  -webkit-animation-delay: 0.4s;
-  -moz-animation-delay: 0.4s;
-  animation-delay: 0.4s;
-}
-
-.fadeIn.second {
-  -webkit-animation-delay: 0.6s;
-  -moz-animation-delay: 0.6s;
-  animation-delay: 0.6s;
-}
-
-.fadeIn.third {
-  -webkit-animation-delay: 0.8s;
-  -moz-animation-delay: 0.8s;
-  animation-delay: 0.8s;
-}
-
-.fadeIn.fourth {
-  -webkit-animation-delay: 1s;
-  -moz-animation-delay: 1s;
-  animation-delay: 1s;
-}
-
-/* Simple CSS3 Fade-in Animation */
-.underlineHover:after {
-  display: block;
-  left: 0;
-  bottom: -10px;
-  width: 0;
-  height: 2px;
-  background-color: #aee4ff;
-  content: "";
-  transition: width 0.2s;
-}
-
-.underlineHover:hover {
-  color: #0d0d0d;
-}
-
-.underlineHover:hover:after{
-  width: 100%;
-}
-
-
-
-/* OTHERS */
-
-*:focus {
-    outline: none;
-} 
-
-#icon {
-  width:60%;
-}
-
-* {
-  box-sizing: border-box;
-}
-</style>
