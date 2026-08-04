@@ -15,9 +15,19 @@ use Illuminate\View\View;
 
 class CampaniaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Campania::with('campaniaTipo')->orderByDesc('fec_ini')->get();
+        return Campania::query()
+            ->with('campaniaTipo')
+            ->when($request->boolean('vigentes'), function ($query) {
+                $query->where('estado', 'ACTIVA')
+                    ->where(function ($subQuery) {
+                        $subQuery->whereNull('fec_fin')
+                            ->orWhereDate('fec_fin', '>=', now()->toDateString());
+                    });
+            })
+            ->orderByDesc('fec_ini')
+            ->get();
     }
 
     public function create(): View

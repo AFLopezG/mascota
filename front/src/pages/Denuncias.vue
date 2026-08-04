@@ -120,6 +120,24 @@
                 <div class="col-12">
                   <q-input :model-value="mascotaNombre(selectedDenuncia.mascota)" label="Mascota" dense outlined readonly />
                 </div>
+                <div class="col-12 col-md-6">
+                  <q-input
+                    :model-value="selectedDenuncia.mascota?.raza?.especie?.nombre || selectedDenuncia.raza?.especie?.nombre || '-'"
+                    label="Especie"
+                    dense
+                    outlined
+                    readonly
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <q-input
+                    :model-value="selectedDenuncia.mascota?.raza?.nombre || selectedDenuncia.raza?.nombre || '-'"
+                    label="Raza"
+                    dense
+                    outlined
+                    readonly
+                  />
+                </div>
                 <div class="col-12">
                   <q-input :model-value="tiposTexto(selectedDenuncia.tipos)" label="Tipos" dense outlined readonly />
                 </div>
@@ -140,6 +158,9 @@
                 </div>
                 <div class="col-12 col-md-4">
                   <q-input :model-value="selectedDenuncia.observacion" label="Observacion" dense outlined readonly />
+                </div>
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="selectedDenuncia.fiscalia" label="Fiscalia" dense outlined readonly />
                 </div>
               </div>
 
@@ -214,39 +235,106 @@
                 <q-input v-model="form.fec_denuncia" type="datetime-local" label="Fecha y hora" outlined dense />
               </div>
               <div class="col-12 col-md-4">
-                <q-select
-                  v-model="form.persona_id"
-                  :options="personaOptions"
-                  option-label="label"
-                  option-value="id"
-                  emit-value
-                  map-options
-                  use-input
-                  fill-input
-                  hide-selected
-                  input-debounce="300"
-                  label="Persona"
+                <q-input
+                  v-model="form.persona_cinit"
+                  label="Cedula"
                   outlined
                   dense
                   :loading="buscandoPersona"
-                  @filter="filterPersonas"
-                  @update:model-value="loadPersonaForForm"
+                  @blur="buscarPersonaPorDocumento"
                 />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="form.persona_complemento"
+                  label="Complemento"
+                  outlined
+                  dense
+                  hint="Opcional"
+                  :loading="buscandoPersona"
+                  @blur="buscarPersonaPorDocumento"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.persona_nombre" label="Nombre" outlined dense />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.persona_paterno" label="Paterno" outlined dense />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.persona_materno" label="Materno" outlined dense />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.persona_telefono" label="Telefono" outlined dense />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.persona_emergencia" label="Emergencia" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-select
                   v-model="form.mascota_id"
                   :options="mascotaOptions"
                   option-label="label"
-                  option-value="id"
+                  option-value="value"
                   emit-value
                   map-options
-                  label="Mascota"
+                  use-input
+                  fill-input
+                  hide-selected
+                  input-debounce="300"
+                  label="Mascota registrada"
                   outlined
                   dense
-                  :disable="!mascotaOptions.length"
+                  clearable
+                  :loading="buscandoMascota"
+                  hint="Busca por codigo o nombre. Si no aparece, completa los datos manuales."
+                  @filter="buscarMascotas"
                   @update:model-value="syncMascota"
                 />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="form.especie_id"
+                  :options="especieOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  label="Especie"
+                  outlined
+                  dense
+                  :disable="!!form.mascota_id"
+                  :rules="!form.mascota_id ? [val => !!val || 'Seleccione una especie'] : []"
+                  @update:model-value="onEspecieChange"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="form.raza_id"
+                  :options="razaOptionsFiltradas"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  use-input
+                  input-debounce="0"
+                  label="Raza"
+                  outlined
+                  dense
+                  :disable="!!form.mascota_id || !form.especie_id"
+                  :rules="!form.mascota_id ? [val => !!val || 'Seleccione una raza'] : []"
+                  @filter="filtrarRazas"
+                />
+              </div>
+              <div class="col-12" v-if="!form.mascota_id">
+                <q-banner rounded class="bg-orange-1 text-orange-10">
+                  Si la mascota no esta registrada, complete especie, raza, color y tamano manualmente.
+                </q-banner>
+              </div>
+              <div class="col-12" v-if="personaSeleccionadaForm">
+                <q-banner rounded class="bg-blue-1 text-blue-10">
+                  Se recuperaron los datos de {{ personaNombre(personaSeleccionadaForm) }}.
+                </q-banner>
               </div>
               <div class="col-12">
                 <q-select
@@ -271,10 +359,13 @@
                 <q-input v-model="form.zona" label="Zona" outlined dense />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="form.color" label="Color" outlined dense />
+                <q-input v-model="form.color" label="Color" outlined dense :disable="!!form.mascota_id" />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="form.tamanio" label="Tamanio" outlined dense />
+                <q-input v-model="form.tamanio" label="Tamanio" outlined dense :disable="!!form.mascota_id" />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="form.fiscalia" label="Fiscalia" outlined dense hint="Opcional" />
               </div>
               <div class="col-12">
                 <q-input v-model="form.descripcion" label="Descripcion" outlined dense type="textarea" autogrow />
@@ -282,6 +373,7 @@
               <div class="col-12">
                 <q-input v-model="form.observacion" label="Observacion" outlined dense type="textarea" autogrow />
               </div>
+
             </div>
 
             <q-card v-if="requiresBiteFields" flat bordered class="q-pa-md">
@@ -344,19 +436,6 @@
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-4">
                 <q-select
-                  v-model="logForm.denuncia_tipo_id"
-                  :options="selectedDenunciaTipoOptions"
-                  option-label="label"
-                  option-value="id"
-                  emit-value
-                  map-options
-                  label="Tipo de denuncia"
-                  outlined
-                  dense
-                />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-select
                   v-model="logForm.proceso_id"
                   :options="nextProcessOptions"
                   option-label="label"
@@ -400,7 +479,15 @@ const emptyForm = () => ({
   id: null,
   fec_denuncia: moment().format('YYYY-MM-DDTHH:mm'),
   persona_id: null,
+  persona_cinit: '',
+  persona_complemento: '',
+  persona_nombre: '',
+  persona_paterno: '',
+  persona_materno: '',
+  persona_telefono: '',
+  persona_emergencia: '',
   mascota_id: null,
+  especie_id: null,
   denuncia_tipo_ids: [],
   direccion: '',
   descripcion: '',
@@ -408,6 +495,7 @@ const emptyForm = () => ({
   color: '',
   tamanio: '',
   observacion: '',
+  fiscalia: '',
   nom_afectado: '',
   edad: '',
   telefono: '',
@@ -421,7 +509,6 @@ const emptyForm = () => ({
 
 const emptyLogForm = () => ({
   proceso_id: null,
-  denuncia_tipo_id: null,
   actividad: '',
   resultado: '',
   obser: ''
@@ -440,6 +527,8 @@ export default {
       savingLog: false,
       filter: '',
       rows: [],
+      especies: [],
+      razas: [],
       procesos: [],
       denunciaTipos: [],
       dialog: false,
@@ -447,8 +536,11 @@ export default {
       form: emptyForm(),
       logForm: emptyLogForm(),
       selectedDenuncia: null,
-      personaOptions: [],
       mascotaOptions: [],
+      mascotaSeleccionadaOption: null,
+      buscandoMascota: false,
+      mascotaSearchSeq: 0,
+      razaFiltro: '',
       buscandoPersona: false,
       personaSeleccionadaForm: null,
       columns: [
@@ -463,7 +555,6 @@ export default {
       logColumns: [
         { name: 'fecha', label: 'Fecha', field: 'fechaHora', align: 'left' },
         { name: 'proceso', label: 'Proceso', field: 'proceso', align: 'left' },
-        { name: 'tipo', label: 'Tipo', field: 'tipo', align: 'left' },
         { name: 'actividad', label: 'Actividad', field: 'actividad', align: 'left' },
         { name: 'resultado', label: 'Resultado', field: 'resultado', align: 'left' }
       ]
@@ -493,16 +584,31 @@ export default {
         value: tipo.id
       }))
     },
-    selectedDenunciaTipoOptions () {
-      const tipos = Array.isArray(this.selectedDenuncia?.tipos) ? this.selectedDenuncia.tipos : []
-      return tipos.map(tipo => ({
-        ...tipo,
-        label: tipo.nombre,
-        value: tipo.id
-      }))
-    },
     selectedDenunciaTipoIds () {
       return Array.isArray(this.form.denuncia_tipo_ids) ? this.form.denuncia_tipo_ids : []
+    },
+    especieOptions () {
+      return this.especies.map(especie => ({
+        ...especie,
+        label: especie.nombre,
+        value: especie.id
+      }))
+    },
+    razaOptionsFiltradas () {
+      const especieId = Number(this.form.especie_id)
+      const term = this.normalizeText(this.razaFiltro)
+
+      return this.razas
+        .filter(raza => {
+          const matchesEspecie = !especieId || Number(raza.especie_id) === especieId
+          const matchesTerm = !term || this.normalizeText(raza.nombre).includes(term)
+          return matchesEspecie && matchesTerm
+        })
+        .map(raza => ({
+          ...raza,
+          label: `${raza.nombre}${raza.especie?.nombre ? ` (${raza.especie.nombre})` : ''}`,
+          value: raza.id
+        }))
     },
     requiresBiteFields () {
       return this.selectedDenunciaTipoIds.some(id => {
@@ -517,7 +623,7 @@ export default {
 
       const currentOrder = this.currentProcessOrder(this.selectedDenuncia)
       return this.procesos
-        .filter(proceso => Number(proceso.orden) === Number(currentOrder) + 1)
+        .filter(proceso => Number(proceso.orden) >= Number(currentOrder) + 1)
         .map(proceso => ({
           ...proceso,
           label: `${proceso.orden}. ${proceso.descripcion}`,
@@ -537,15 +643,19 @@ export default {
     async loadInitialData () {
       this.loading = true
       try {
-        const [denunciasRes, tiposRes, procesosRes] = await Promise.all([
+        const [denunciasRes, tiposRes, procesosRes, especiesRes, razasRes] = await Promise.all([
           this.$api.get('denuncia'),
           this.$api.get('denuncia-tipo'),
-          this.$api.get('proceso')
+          this.$api.get('proceso'),
+          this.$api.get('especie'),
+          this.$api.get('raza')
         ])
 
         this.rows = Array.isArray(denunciasRes.data) ? denunciasRes.data : []
         this.denunciaTipos = Array.isArray(tiposRes.data) ? tiposRes.data : []
         this.procesos = Array.isArray(procesosRes.data) ? procesosRes.data : []
+        this.especies = Array.isArray(especiesRes.data) ? especiesRes.data : []
+        this.razas = Array.isArray(razasRes.data) ? razasRes.data : []
 
         if (this.rows.length && !this.selectedDenuncia) {
           this.selectDenuncia(null, this.rows[0])
@@ -562,18 +672,28 @@ export default {
     openCreate () {
       this.form = emptyForm()
       this.personaSeleccionadaForm = null
-      this.personaOptions = []
       this.mascotaOptions = []
+      this.mascotaSeleccionadaOption = null
+      this.razaFiltro = ''
       this.dialog = true
     },
     async save () {
       this.saving = true
       try {
+        await this.buscarPersonaPorDocumento()
+
+        if (!this.form.mascota_id && (!this.form.especie_id || !this.form.raza_id)) {
+          this.notifyError(null, 'Seleccione una mascota o complete especie y raza.')
+          return
+        }
+
         const payload = {
           ...this.form,
           denuncia_tipo_ids: this.form.denuncia_tipo_ids,
+          especie_id: this.form.especie_id,
           raza_id: this.form.raza_id,
-          fec_denuncia: this.form.fec_denuncia
+          fec_denuncia: this.form.fec_denuncia,
+          mascota_id: this.form.mascota_id
         }
 
         const { data } = this.form.id
@@ -597,61 +717,136 @@ export default {
         this.saving = false
       }
     },
-    async filterPersonas (val, update, abort) {
-      const term = String(val || '').trim()
-      if (!term) {
-        update(() => {
-          this.personaOptions = []
-        })
-        return
+    async buscarPersonaPorDocumento () {
+      const cinit = String(this.form.persona_cinit || '').trim()
+      const complemento = String(this.form.persona_complemento || '').trim()
+
+      if (!cinit) {
+        this.form.persona_id = null
+        this.personaSeleccionadaForm = null
+        return null
       }
 
       this.buscandoPersona = true
       try {
-        const { data } = await this.$api.get('persona', {
-          params: { q: term, limit: 20 }
+        const { data } = await this.$api.get('buscar-documento', {
+          params: {
+            cinit,
+            complemento: complemento || undefined
+          }
         })
 
-        update(() => {
-          this.personaOptions = (Array.isArray(data) ? data : []).map(persona => ({
-            ...persona,
-            label: this.personaEtiqueta(persona),
-            value: persona.id
-          }))
-        })
+        const persona = data || null
+        if (!persona) {
+          this.form.persona_id = null
+          this.personaSeleccionadaForm = null
+          return null
+        }
+
+        this.cargarPersonaEnFormulario(persona)
+        return persona
       } catch (error) {
-        abort()
-        this.notifyError(error, 'No se pudieron buscar las personas.')
+        this.notifyError(error, 'No se pudo recuperar la persona por documento.')
+        return null
       } finally {
         this.buscandoPersona = false
       }
     },
-    async loadPersonaForForm (personaId) {
-      this.form.mascota_id = null
-      this.form.raza_id = null
-      this.mascotaOptions = []
-      this.personaSeleccionadaForm = null
+    cargarPersonaEnFormulario (persona) {
+      this.form.persona_id = persona.id || null
+      this.form.persona_cinit = persona.cinit || ''
+      this.form.persona_complemento = persona.complemento || ''
+      this.form.persona_nombre = persona.nombre || ''
+      this.form.persona_paterno = persona.paterno || ''
+      this.form.persona_materno = persona.materno || ''
+      this.form.persona_telefono = persona.telefono || ''
+      this.form.persona_emergencia = persona.emergencia || ''
+      this.personaSeleccionadaForm = persona
+    },
+    async buscarMascotas (val, update, abort) {
+      const term = String(val || '').trim()
 
-      if (!personaId) {
+      if (!term) {
+        update(() => {
+          this.mascotaOptions = this.mascotaSeleccionadaOption ? [this.mascotaSeleccionadaOption] : []
+        })
         return
       }
 
+      const currentSeq = (this.mascotaSearchSeq || 0) + 1
+      this.mascotaSearchSeq = currentSeq
+
       try {
-        const { data } = await this.$api.get(`persona/${personaId}`)
-        const persona = data?.data || null
-        this.personaSeleccionadaForm = persona
-        this.mascotaOptions = (persona?.mascotas || []).map(mascota => ({
-          ...mascota,
-          label: this.mascotaNombre(mascota),
-          value: mascota.id
-        }))
+        this.buscandoMascota = true
+        const { data } = await this.$api.get('mascota', {
+          params: {
+            q: term,
+            limit: 20
+          }
+        })
+
+        if (currentSeq !== this.mascotaSearchSeq) {
+          abort()
+          return
+        }
+
+        const mascotas = Array.isArray(data) ? data : []
+        update(() => {
+          const options = mascotas.map(mascota => ({
+            ...mascota,
+            label: `${mascota.codigo || 'SIN CODIGO'} - ${mascota.nombre || 'SIN NOMBRE'}`,
+            value: mascota.id
+          }))
+
+          if (this.mascotaSeleccionadaOption && !options.some(item => Number(item.value) === Number(this.form.mascota_id))) {
+            options.unshift(this.mascotaSeleccionadaOption)
+          }
+
+          this.mascotaOptions = options
+        })
       } catch (error) {
-        this.notifyError(error, 'No se pudo cargar la persona seleccionada.')
+        if (currentSeq === this.mascotaSearchSeq) {
+          update(() => {
+            this.mascotaOptions = this.mascotaSeleccionadaOption ? [this.mascotaSeleccionadaOption] : []
+          })
+          this.notifyError(error, 'No se pudo buscar la mascota.')
+        } else {
+          abort()
+        }
+      } finally {
+        if (currentSeq === this.mascotaSearchSeq) {
+          this.buscandoMascota = false
+        }
       }
     },
     syncMascota (mascotaId) {
-      const mascota = this.mascotaOptions.find(item => Number(item.id) === Number(mascotaId))
-      this.form.raza_id = mascota?.raza?.id || mascota?.raza_id || null
+      const mascota = this.mascotaOptions.find(item => Number(item.value) === Number(mascotaId))
+      this.mascotaSeleccionadaOption = mascota || null
+
+      if (!mascota) {
+        this.form.especie_id = null
+        this.form.raza_id = null
+        this.form.color = ''
+        this.form.tamanio = ''
+        return
+      }
+
+      this.form.especie_id = mascota.raza?.especie?.id || null
+      this.form.raza_id = mascota.raza?.id || mascota.raza_id || null
+      this.form.color = mascota.color_principal || ''
+      this.form.tamanio = mascota.tamano || ''
+
+      if (mascota.persona) {
+        this.cargarPersonaEnFormulario(mascota.persona)
+      }
+    },
+    onEspecieChange (especieId) {
+      this.form.raza_id = null
+      this.razaFiltro = ''
+    },
+    filtrarRazas (val, update) {
+      this.razaFiltro = val || ''
+      update(() => {})
     },
     selectDenuncia (_evt, row) {
       this.selectedDenuncia = row
@@ -662,11 +857,9 @@ export default {
     openLogDialog (row) {
       this.selectedDenuncia = row
       const nextProcess = this.nextProcessOptions[0] || null
-      const firstTipo = this.selectedDenunciaTipoOptions[0] || null
 
       this.logForm = {
         proceso_id: nextProcess?.id || null,
-        denuncia_tipo_id: firstTipo?.id || null,
         actividad: nextProcess ? nextProcess.descripcion : '',
         resultado: nextProcess ? nextProcess.descripcion : '',
         obser: ''

@@ -178,10 +178,31 @@
                 <q-input v-model="vacunaForm.fecha" type="date" label="Fecha" outlined dense />
               </div>
               <div class="col-12 col-md-4">
+                <q-input v-model="vacunaForm.fecha_prox" type="date" label="Fecha prox" outlined dense hint="Opcional" />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="vacunaForm.campania_id"
+                  :options="campaniaOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  label="Campania de vacunacion"
+                  outlined
+                  dense
+                  clearable
+                  :rules="[val => !!val || 'Seleccione una campania vigente']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
                 <q-input v-model="vacunaForm.tipo" label="Tipo" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="vacunaForm.lugar" label="Lugar" outlined dense />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="vacunaForm.num_lote" label="Numero de lote" outlined dense hint="Opcional" />
               </div>
               <div class="col-12">
                 <q-input v-model="vacunaForm.observacion" type="textarea" autogrow label="Observacion" outlined dense />
@@ -213,6 +234,7 @@ export default {
       buscando: false,
       guardandoVacuna: false,
       personaOptions: [],
+      campaniaOptions: [],
       personaSeleccionadaId: null,
       personaSeleccionada: null,
       showVacuna: false,
@@ -221,14 +243,20 @@ export default {
       vacunaForm: {
         mascota_id: null,
         fecha: moment().format('YYYY-MM-DD'),
+        fecha_prox: '',
         tipo: '',
         lugar: '',
+        num_lote: '',
+        campania_id: null,
         observacion: ''
       },
       vacunaColumns: [
         { name: 'fecha', label: 'FECHA', field: 'fecha', align: 'left' },
+        { name: 'fecha_prox', label: 'FECHA PROX', field: 'fecha_prox', align: 'left' },
         { name: 'tipo', label: 'TIPO', field: 'tipo', align: 'left' },
         { name: 'lugar', label: 'LUGAR', field: 'lugar', align: 'left' },
+        { name: 'num_lote', label: 'LOTE', field: 'num_lote', align: 'left' },
+        { name: 'campania', label: 'CAMPANIA', field: row => row.campania?.nombre || '', align: 'left' },
         { name: 'observacion', label: 'OBSERVACION', field: 'observacion', align: 'left' }
       ]
     }
@@ -239,6 +267,27 @@ export default {
     }
   },
   methods: {
+    async cargarCampaniasVigentes () {
+      try {
+        const { data } = await this.$api.get('campania', {
+          params: {
+            vigentes: 1
+          }
+        })
+
+        const campanias = Array.isArray(data) ? data : []
+        this.campaniaOptions = campanias.map(campania => ({
+          label: `${campania.nombre}${campania.fec_ini ? ` (${moment(campania.fec_ini).format('DD/MM/YYYY')})` : ''}`,
+          value: campania.id
+        }))
+      } catch (error) {
+        this.campaniaOptions = []
+        this.$q.notify({
+          color: 'negative',
+          message: error?.response?.data?.message || 'No se pudieron cargar las campanas vigentes'
+        })
+      }
+    },
     async filtrarPersonas (val, update, abort) {
       const term = String(val || '').trim()
 
@@ -333,8 +382,11 @@ export default {
       this.vacunaForm = {
         mascota_id: mascota.id,
         fecha: moment().format('YYYY-MM-DD'),
+        fecha_prox: '',
         tipo: '',
         lugar: '',
+        num_lote: '',
+        campania_id: null,
         observacion: ''
       }
       this.showVacuna = true
@@ -361,6 +413,9 @@ export default {
         this.guardandoVacuna = false
       }
     }
+  },
+  async mounted () {
+    await this.cargarCampaniasVigentes()
   }
 }
 </script>

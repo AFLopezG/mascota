@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateDenunciaRequest;
 use App\Models\Denuncia;
 use App\Models\DenunciaLog;
 use App\Models\DenunciaTipo;
+use App\Models\Persona;
 use App\Models\Proceso;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,10 +23,10 @@ class DenunciaController extends Controller
                 'persona',
                 'mascota.raza.especie',
                 'mascota.categoria',
+                'raza.especie',
                 'user',
                 'tipos',
                 'logs.proceso',
-                'logs.denunciaTipo',
                 'logs.user',
             ])->orderByDesc('fec_denuncia')->get()
         );
@@ -36,6 +37,9 @@ class DenunciaController extends Controller
         $data = $request->validated();
 
         return DB::transaction(function () use ($data, $request) {
+            $persona = $this->resolvePersona($data);
+            $data['persona_id'] = $persona->id;
+
             $denuncia = new Denuncia();
             $denuncia->fill($this->mapDenunciaData($data));
             $denuncia->numero = ((int) Denuncia::max('numero')) + 1;
@@ -83,6 +87,9 @@ class DenunciaController extends Controller
         }
 
         return DB::transaction(function () use ($data, $denuncia) {
+            $persona = $this->resolvePersona($data);
+            $data['persona_id'] = $persona->id;
+
             $denuncia->fill($this->mapDenunciaData($data));
             $denuncia->save();
             $denuncia->tipos()->sync($data['denuncia_tipo_ids']);
@@ -107,7 +114,6 @@ class DenunciaController extends Controller
     {
         $data = $request->validate([
             'proceso_id' => ['required', 'integer', 'exists:procesos,id'],
-            'denuncia_tipo_id' => ['required', 'integer', 'exists:denuncia_tipos,id'],
             'actividad' => ['required', 'string', 'max:255'],
             'resultado' => ['required', 'string', 'max:255'],
             'obser' => ['nullable', 'string'],
@@ -123,15 +129,9 @@ class DenunciaController extends Controller
             ]);
         }
 
-        if ((int) $selectedProcess->orden !== ($currentOrder + 1)) {
+        if ((int) $selectedProcess->orden <= $currentOrder) {
             throw ValidationException::withMessages([
-                'proceso_id' => 'Debes seleccionar el siguiente proceso en orden.',
-            ]);
-        }
-
-        if (!$denuncia->tipos()->where('denuncia_tipos.id', $data['denuncia_tipo_id'])->exists()) {
-            throw ValidationException::withMessages([
-                'denuncia_tipo_id' => 'El tipo seleccionado no pertenece a la denuncia.',
+                'proceso_id' => 'Debes seleccionar un proceso posterior al actual.',
             ]);
         }
 
@@ -142,7 +142,6 @@ class DenunciaController extends Controller
             'obser' => $data['obser'] ? trim($data['obser']) : null,
             'denuncia_id' => $denuncia->id,
             'user_id' => $request->user()->id,
-            'denuncia_tipo_id' => $data['denuncia_tipo_id'],
             'proceso_id' => $selectedProcess->id,
         ]);
 
@@ -210,6 +209,7 @@ class DenunciaController extends Controller
             'tamanio' => $this->normalizeOptionalText($data['tamanio'] ?? null),
             'estado' => $this->normalizeOptionalText($data['estado'] ?? null),
             'observacion' => $this->normalizeOptionalText($data['observacion'] ?? null, false),
+            'fiscalia' => $this->normalizeOptionalText($data['fiscalia'] ?? null, false),
             'nom_afectado' => $biteFields['nom_afectado'],
             'edad' => $biteFields['edad'],
             'telefono' => $biteFields['telefono'],
@@ -220,7 +220,9 @@ class DenunciaController extends Controller
             'obs' => $biteFields['obs'],
             'raza_id' => (int) $data['raza_id'],
             'persona_id' => (int) $data['persona_id'],
-            'mascota_id' => (int) $data['mascota_id'],
+            'mascota_id' => array_key_exists('mascota_id', $data) && $data['mascota_id'] !== null && $data['mascota_id'] !== ''
+                ? (int) $data['mascota_id']
+                : null,
         ];
     }
 
@@ -230,10 +232,10 @@ class DenunciaController extends Controller
             'persona',
             'mascota.raza.especie',
             'mascota.categoria',
+            'raza.especie',
             'user',
             'tipos',
             'logs.proceso',
-            'logs.denunciaTipo',
             'logs.user',
         ]);
     }
@@ -257,6 +259,54 @@ class DenunciaController extends Controller
             ->contains(function (DenunciaTipo $tipo) {
                 return mb_strtoupper(trim($tipo->nombre)) === 'MORDEDURA';
             });
+    }
+
+    private function resolvePersona(array $data): Persona
+    {
+        if (!empty($data['persona_id'])) {
+            $persona = Persona::findOrFail((int) $data['persona_id']);
+            $this->fillPersonaFromDenunciaData($persona, $data);
+            $persona->save();
+
+            return $persona;
+        }
+
+        $cinit = $this->normalizeOptionalText($data['persona_cinit'] ?? null);
+        $complemento = $this->normalizeOptionalText($data['persona_complemento'] ?? null);
+        $nombre = $this->normalizeOptionalText($data['persona_nombre'] ?? '');
+
+        $query = Persona::query()->where('cinit', $cinit);
+        if ($complemento !== null && $complemento !== '') {
+            $query->where('complemento', $complemento);
+        }
+
+        $persona = $query->first();
+        if ($persona) {
+            $this->fillPersonaFromDenunciaData($persona, $data);
+            $persona->save();
+
+            return $persona;
+        }
+
+        $persona = new Persona();
+        $persona->cinit = $cinit;
+        $persona->complemento = $complemento;
+        $persona->nombre = $nombre;
+        $this->fillPersonaFromDenunciaData($persona, $data);
+        $persona->save();
+
+        return $persona;
+    }
+
+    private function fillPersonaFromDenunciaData(Persona $persona, array $data): void
+    {
+        $persona->cinit = $this->normalizeOptionalText($data['persona_cinit'] ?? null) ?: $persona->cinit;
+        $persona->complemento = $this->normalizeOptionalText($data['persona_complemento'] ?? null) ?: null;
+        $persona->nombre = $this->normalizeOptionalText($data['persona_nombre'] ?? null) ?: $persona->nombre;
+        $persona->paterno = $this->normalizeOptionalText($data['persona_paterno'] ?? null) ?: null;
+        $persona->materno = $this->normalizeOptionalText($data['persona_materno'] ?? null) ?: null;
+        $persona->telefono = $this->normalizeOptionalText($data['persona_telefono'] ?? null) ?: null;
+        $persona->emergencia = $this->normalizeOptionalText($data['persona_emergencia'] ?? null) ?: null;
     }
 
     private function normalizeOptionalText(?string $value, bool $uppercase = true): string

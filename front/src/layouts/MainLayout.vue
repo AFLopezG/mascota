@@ -67,7 +67,6 @@
 
         <div class="q-mt-md text-body2">
           <div class="text-weight-medium">{{ store.user?.nombre || 'Usuario' }}</div>
-          <div class="text-caption text-white-7">{{ store.user?.name || '' }}</div>
         </div>
       </div>
 

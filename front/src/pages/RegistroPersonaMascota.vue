@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-page class="app-page">
     <q-card class="app-soft-card">
       <q-card-section class="app-hero text-white">
@@ -33,8 +33,8 @@
           indicator-color="primary"
           @update:model-value="verMapa"
         >
-          <q-tab name="persona" icon="person" label="Persona" />
-          <q-tab name="mascota" icon="pets" label="Mascota" :disable="!personaForm.id" />
+          <q-tab name="persona" icon="sym_r_person" label="Persona" />
+          <q-tab name="mascota" icon="sym_r_pets" label="Mascota" :disable="!personaForm.id" />
         </q-tabs>
 
         <q-tab-panels v-model="tab" animated class="bg-transparent">
@@ -108,7 +108,7 @@
                       Haga clic en el mapa o arrastre el marcador para guardar latitud y longitud.
                     </div>
                   </div>
-                  <q-btn outline color="primary" icon="my_location" label="Centrar mapa" @click="myLocation" />
+                  <q-btn outline color="primary" icon="sym_r_my_location" label="Centrar mapa" @click="myLocation" />
                 </q-card-section>
                 <q-separator />
                 <q-card-section class="q-pa-none">
@@ -118,7 +118,7 @@
 
               <div class="row justify-end q-gutter-sm">
                 <q-btn flat label="Limpiar" color="negative" @click="resetPersonaForm" />
-                <q-btn color="positive" icon="save" :label="personaForm.id ? 'Actualizar persona' : 'Guardar persona'" type="submit" :loading="guardandoPersona" />
+                <q-btn color="positive" icon="sym_r_save" :label="personaForm.id ? 'Actualizar persona' : 'Guardar persona'" type="submit" :loading="guardandoPersona" />
               </div>
             </q-form>
           </q-tab-panel>
@@ -132,7 +132,7 @@
               <div class="text-subtitle1">Mascotas registradas</div>
               <q-btn
                 color="positive"
-                icon="add"
+                icon="sym_r_add"
                 label="Registrar mascota"
                 :disable="!personaForm.id"
                 @click="abrirDialogMascotaNueva"
@@ -165,11 +165,108 @@
 
               <template #body-cell-acciones="props">
                 <q-td :props="props">
-                  <q-btn flat dense icon="edit" color="primary" @click="editarMascota(props.row)" />
-                  <q-btn flat dense icon="photo_camera" color="secondary" @click="cambiarFotoMascota(props.row)" />
+                  <q-btn flat dense icon="sym_r_edit" color="primary" @click="editarMascota(props.row)" />
+                  <q-btn flat dense icon="sym_r_photo_camera" color="secondary" @click="cambiarFotoMascota(props.row)" />
+                  <q-btn flat dense icon="sym_r_picture_as_pdf" color="info" :loading="generandoCredencial" @click="abrirCredencialMascota(props.row)" />
                 </q-td>
               </template>
             </q-table>
+
+            <div v-if="credencialMascota" class="credential-stage no-print" aria-hidden="true">
+              <section ref="credentialFrontRef" class="credential-card credential-card--front">
+                <div class="credential-card__top">
+                  <div>
+                    <div class="credential-card__label">Municipalidad</div>
+                    <div class="credential-card__title">Credencial de mascota</div>
+                  </div>
+                  <div class="credential-card__code">{{ credencialMascota.codigo }}</div>
+                </div>
+
+                <div class="credential-front">
+                  <div class="credential-photo">
+                    <img v-if="credencialMascota.fotoUrl" :src="credencialMascota.fotoUrl" alt="Foto de mascota" crossorigin="anonymous" />
+                    <div v-else class="credential-photo__empty">
+                      <q-icon name="sym_r_pets" size="56px" />
+                      <div>Sin foto</div>
+                    </div>
+                  </div>
+
+                  <div class="credential-data">
+                    <div class="credential-data__row">
+                      <span>Nombre</span>
+                      <strong>{{ credencialMascota.nombre }}</strong>
+                    </div>
+                    <div class="credential-data__row">
+                      <span>Especie</span>
+                      <strong>{{ credencialMascota.especie }}</strong>
+                    </div>
+                    <div class="credential-data__row">
+                      <span>Raza</span>
+                      <strong>{{ credencialMascota.raza }}</strong>
+                    </div>
+                    <div class="credential-data__row">
+                      <span>Color</span>
+                      <strong>{{ credencialMascota.color }}</strong>
+                    </div>
+                    <div class="credential-data__row">
+                      <span>Tamano</span>
+                      <strong>{{ credencialMascota.tamano }}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="credential-owner">
+                  <div class="credential-owner__label">Propietario</div>
+                  <div class="credential-owner__name">{{ credencialMascota.propietario.nombre }}</div>
+                  <div class="credential-owner__meta">
+                    {{ credencialMascota.propietario.cinit }} | {{ credencialMascota.propietario.telefono }}
+                  </div>
+                </div>
+              </section>
+
+              <section ref="credentialBackRef" class="credential-card credential-card--back">
+                <div class="credential-card__top credential-card__top--back">
+                  <div>
+                    <div class="credential-card__label">Control interno</div>
+                    <div class="credential-card__title">Datos del propietario</div>
+                  </div>
+                  <q-badge color="white" text-color="primary" rounded>Impresion</q-badge>
+                </div>
+
+                <div class="back-notes">
+                  <div class="back-notes__item">
+                    <span>Codigo</span>
+                    <strong>{{ credencialMascota.codigo }}</strong>
+                  </div>
+                  <div class="back-notes__item">
+                    <span>Propietario</span>
+                    <strong>{{ credencialMascota.propietario.nombre }}</strong>
+                  </div>
+                  <div class="back-notes__item">
+                    <span>Telefono</span>
+                    <strong>{{ credencialMascota.propietario.telefono }}</strong>
+                  </div>
+                  <div class="back-notes__item">
+                    <span>Direccion</span>
+                    <strong>{{ credencialMascota.propietario.direccion }}</strong>
+                  </div>
+                  <div class="back-notes__item">
+                    <span>Zona / Distrito</span>
+                    <strong>{{ credencialMascota.propietario.zona }} / {{ credencialMascota.propietario.distrito }}</strong>
+                  </div>
+                </div>
+
+                <div class="qr-panel q-mt-md">
+                  <img v-if="credencialMascota.qrSrc" :src="credencialMascota.qrSrc" crossorigin="anonymous" alt="Codigo QR de mascota" class="qr-panel__img" />
+                  <div class="qr-panel__text">
+                    <div class="text-weight-bold">{{ credencialMascota.publicLink }}</div>
+                    <div class="text-caption">
+                      Escanee el codigo para abrir la ficha publica de la mascota sin iniciar sesion.
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
 
             <q-dialog v-model="dialogMascota" persistent @hide="resetMascotaForm">
               <q-card class="dialog-card app-soft-card">
@@ -178,7 +275,7 @@
                     <div class="text-h6">{{ mascotaForm.id ? 'Editar mascota' : 'Registrar mascota' }}</div>
                     <div class="text-caption">Datos generales de la mascota</div>
                   </div>
-                  <q-btn flat round icon="close" color="white" v-close-popup />
+                  <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
                 </q-card-section>
 
                 <q-card-section class="q-pa-lg">
@@ -282,7 +379,7 @@
                       <q-btn flat label="Cancelar" color="negative" v-close-popup />
                       <q-btn
                         color="positive"
-                        icon="save"
+                        icon="sym_r_save"
                         :label="mascotaForm.id ? 'Actualizar mascota' : 'Guardar mascota'"
                         type="submit"
                         :loading="guardandoMascota"
@@ -301,7 +398,7 @@
                     <div class="text-h6">Modificar foto</div>
                     <div class="text-caption">{{ mascotaFotoForm.nombre || 'Mascota seleccionada' }}</div>
                   </div>
-                  <q-btn flat round icon="close" color="white" v-close-popup />
+                  <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
                 </q-card-section>
 
                 <q-card-section class="q-pa-md">
@@ -339,7 +436,7 @@
                       <q-btn flat label="Cancelar" color="negative" v-close-popup />
                       <q-btn
                         color="secondary"
-                        icon="save"
+                        icon="sym_r_save"
                         label="Guardar foto"
                         type="submit"
                         :loading="guardandoFotoMascota"
@@ -360,6 +457,7 @@
 <script>
 import L from 'leaflet'
 import moment from 'moment'
+import QRCode from 'qrcode'
 import 'leaflet/dist/leaflet.css'
 
 const emptyPersona = () => ({
@@ -468,8 +566,10 @@ export default {
       guardandoPersona: false,
       guardandoMascota: false,
       guardandoFotoMascota: false,
+      generandoCredencial: false,
       dialogMascota: false,
       dialogFotoMascota: false,
+      credencialMascota: null,
       mensajePersona: '',
       mensajeTipo: '',
       personaForm: emptyPersona(),
@@ -872,6 +972,32 @@ export default {
       this.sincronizarEspecieDesdeRaza(this.mascotaFotoForm.raza_id, true)
       this.dialogFotoMascota = true
     },
+    async abrirCredencialMascota (mascota) {
+      if (!mascota?.codigo) {
+        this.mostrarMensaje('La mascota no tiene codigo para generar la credencial.', 'warning')
+        return
+      }
+
+      this.credencialMascota = await this.buildCredencialMascota(mascota)
+
+      try {
+        const { data, headers } = await this.$api.get(`public/mascota/${encodeURIComponent(mascota.codigo)}/pdf`, {
+          responseType: 'blob'
+        })
+
+        const blob = new Blob([data], {
+          type: headers?.['content-type'] || 'application/pdf'
+        })
+        const blobUrl = URL.createObjectURL(blob)
+        const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+
+
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+        this.mostrarMensaje('Credencial PDF abierta correctamente.', 'success')
+      } catch (error) {
+        this.mostrarMensaje('No se pudo abrir la credencial PDF.', 'negative')
+      }
+    },
     async guardarMascota () {
       if (!this.personaForm.id) {
         this.mostrarMensaje('Primero debe guardar o cargar una persona.', 'warning')
@@ -1053,6 +1179,70 @@ export default {
       const formatted = moment(value)
       return formatted.isValid() ? formatted.format('YYYY-MM-DD') : fallback
     },
+    async buildCredencialMascota (mascota) {
+      const persona = mascota?.persona || this.personaForm || {}
+      const nombrePropietario = [persona.nombre, persona.paterno, persona.materno].filter(Boolean).join(' ') || '-'
+      const publicLink = this.buildPublicLink(mascota?.codigo || '')
+      const qrSrc = publicLink
+        ? await QRCode.toDataURL(publicLink, {
+            margin: 1,
+            width: 260,
+            errorCorrectionLevel: 'M',
+            color: {
+              dark: '#0f172a',
+              light: '#ffffff'
+            }
+          })
+        : ''
+
+      return {
+        id: mascota.id,
+        codigo: mascota.codigo || '-',
+        nombre: mascota.nombre || '-',
+        fotoUrl: mascota.fotoUrl || '',
+        especie: mascota.especie || mascota.raza?.especie?.nombre || '-',
+        raza: mascota.raza?.nombre || '-',
+        color: [mascota.color_principal, mascota.color_secundario].filter(Boolean).join(' / ') || '-',
+        tamano: mascota.tamano || '-',
+        publicLink,
+        qrSrc,
+        propietario: {
+          nombre: nombrePropietario,
+          cinit: [persona.cinit, persona.complemento].filter(Boolean).join(' ') || '-',
+          telefono: persona.telefono || '-',
+          direccion: persona.direccion || '-',
+          zona: persona.zona || '-',
+          distrito: persona.distrito || '-'
+        }
+      }
+    },
+    buildPublicLink (codigo) {
+      const codigoNormalizado = (codigo || '').trim()
+
+      if (!codigoNormalizado) {
+        return ''
+      }
+
+      const routePath = this.$router.resolve({
+        path: `/credencial-mascota/${encodeURIComponent(codigoNormalizado)}`
+      }).href
+
+      return `${window.location.origin}${routePath}`
+    },
+    waitForMedia (root) {
+      const media = root?.querySelectorAll?.('img') || []
+
+      return Promise.all(Array.from(media).map((element) => {
+        if (element.complete) {
+          return Promise.resolve()
+        }
+
+        return new Promise((resolve) => {
+          element.onload = () => resolve()
+          element.onerror = () => resolve()
+        })
+      }))
+    },
     resetPersonaForm () {
       this.personaForm = emptyPersona()
       this.mascotas = []
@@ -1083,6 +1273,194 @@ export default {
 <style scoped>
 .map-card {
   overflow: hidden;
+}
+
+.credential-stage {
+  position: fixed;
+  left: -1200px;
+  top: 0;
+  width: 856px;
+  pointer-events: none;
+}
+
+.credential-card {
+  min-height: 0;
+  aspect-ratio: 1.586;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.98)),
+    linear-gradient(135deg, #ffffff, #eff6ff);
+  box-shadow: 0 18px 44px rgba(15,23,42,.18);
+  border: 1px solid rgba(15,23,42,.12);
+  position: relative;
+  padding: 18px;
+}
+
+.credential-card--back {
+  background:
+    radial-gradient(circle at top right, rgba(14,165,233,.12), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+}
+
+.credential-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.credential-card__top--back {
+  align-items: center;
+}
+
+.credential-card__label {
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #0f766e;
+}
+
+.credential-card__title {
+  font-size: 1.16rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.credential-card__code {
+  font-size: .9rem;
+  font-weight: 900;
+  color: #0f172a;
+  background: #dbeafe;
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+.credential-front {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.credential-photo {
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e2e8f0, #cbd5e1);
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.08);
+}
+
+.credential-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.credential-photo__empty {
+  color: #334155;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.credential-data {
+  display: grid;
+  gap: 8px;
+}
+
+.credential-data__row {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.06);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.credential-data__row span,
+.back-notes__item span {
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #64748b;
+}
+
+.credential-owner {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f766e, #0891b2);
+  color: #fff;
+}
+
+.credential-owner__label {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: rgba(255,255,255,.72);
+}
+
+.credential-owner__name {
+  margin-top: 4px;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.credential-owner__meta {
+  margin-top: 6px;
+  color: rgba(255,255,255,.86);
+  font-size: .82rem;
+}
+
+.qr-panel {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(15,23,42,.08);
+}
+
+.qr-panel__img {
+  width: 190px;
+  height: 190px;
+  object-fit: contain;
+  background: #fff;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.qr-panel__text {
+  text-align: center;
+  max-width: 300px;
+  color: #0f172a;
+  font-size: .88rem;
+  word-break: break-all;
+}
+
+.back-notes {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.back-notes__item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(15,23,42,.08);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .dialog-card {

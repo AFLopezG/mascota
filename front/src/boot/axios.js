@@ -87,7 +87,14 @@ export default boot(({ app,router }) => {
 
   async function checkAuth() {
     const token = localStorage.getItem('tokenExpendio');
+    const currentRoute = router.currentRoute?.value
+    const isPublicRoute = !!currentRoute?.matched?.some(record => record.meta?.public)
+
     if (!token) {
+      if (isPublicRoute) {
+        return
+      }
+
       forceLogout();
       return;
     }

@@ -2,18 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Campania;
 use App\Models\Categoria;
 use App\Http\Requests\StoreMascotaRequest;
 use App\Http\Requests\UpdateMascotaRequest;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
 use App\Models\Especie;
 use App\Models\Mascota;
 use App\Models\Persona;
 use App\Models\Raza;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Endroid\QrCode\Writer\PngWriter;
 
 class MascotaController extends Controller
 {
@@ -25,7 +31,50 @@ class MascotaController extends Controller
             $query->where('persona_id', $request->integer('persona_id'));
         }
 
+        if ($request->filled('q')) {
+            $term = mb_strtoupper(trim((string) $request->input('q')));
+            $query->where(function ($subQuery) use ($term) {
+                $subQuery->whereRaw('UPPER(codigo) LIKE ?', ['%' . $term . '%'])
+                    ->orWhereRaw('UPPER(nombre) LIKE ?', ['%' . $term . '%']);
+            });
+        }
+
+        $limit = $request->integer('limit');
+        if ($limit > 0) {
+            $query->limit(min($limit, 20));
+        }
+
         return $query->orderBy('nombre')->get();
+    }
+
+    public function publicShow(string $codigo): JsonResponse
+    {
+        $codigo = $this->normalizeCodigo($codigo);
+
+        $mascota = Mascota::query()
+            ->with(['persona', 'raza.especie', 'categoria'])
+            ->whereRaw('UPPER(codigo) = ?', [$codigo])
+            ->firstOrFail();
+
+        return response()->json([
+            'data' => $this->buildPublicMascotaData($mascota),
+        ]);
+    }
+
+    public function publicCredentialPdf(string $codigo)
+    {
+        $codigo = $this->normalizeCodigo($codigo);
+
+        $mascota = Mascota::query()
+            ->with(['persona', 'raza.especie', 'categoria'])
+            ->whereRaw('UPPER(codigo) = ?', [$codigo])
+            ->firstOrFail();
+
+        $data = $this->buildCredentialPdfData($mascota);
+
+        return Pdf::loadView('pdf.credencial-mascota', $data)
+            ->setPaper('letter', 'portrait')
+            ->stream('credencial-' . $codigo . '.pdf');
     }
 
     public function store(StoreMascotaRequest $request)
@@ -35,6 +84,7 @@ class MascotaController extends Controller
 
         $mascota = new Mascota();
         $mascota->codigo = $this->resolveCodigoForStore($data);
+        $mascota->numero = $this->resolveNumeroForStore($data, $mascota->codigo);
         $this->fillMascota($mascota, $data, $request);
         $mascota->persona_id = $persona->id;
         $mascota->save();
@@ -56,6 +106,7 @@ class MascotaController extends Controller
     {
         $data = $request->validated();
         $mascota->codigo = $this->resolveCodigoForUpdate($mascota, $data);
+        $mascota->numero = $this->resolveNumeroForUpdate($mascota, $data, $mascota->codigo);
         $this->fillMascota($mascota, $data, $request);
         $mascota->persona_id = $data['persona_id'];
         $mascota->save();
@@ -63,6 +114,20 @@ class MascotaController extends Controller
         return response()->json([
             'message' => 'Mascota actualizada.',
             'data' => $mascota->fresh(['persona', 'vacunas', 'categoria', 'raza.especie', 'campania']),
+        ]);
+    }
+
+    public function updateFoto(Request $request, Mascota $mascota): JsonResponse
+    {
+        $validated = $request->validate([
+            'foto' => ['required', 'image', 'max:4096'],
+        ]);
+
+        $this->storeFoto($mascota, $validated['foto']);
+
+        return response()->json([
+            'message' => 'Foto actualizada correctamente.',
+            'data' => $mascota->fresh(['persona', 'raza']),
         ]);
     }
 
@@ -114,6 +179,40 @@ class MascotaController extends Controller
         return $this->resolveCodigoForSpecies($data['especie_id']);
     }
 
+    private function resolveNumeroForStore(array $data, ?string $codigo = null): int
+    {
+        if (array_key_exists('numero', $data) && $data['numero'] !== null && $data['numero'] !== '') {
+            $numeroValue = filter_var($data['numero'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+            if ($numeroValue === false) {
+                throw ValidationException::withMessages([
+                    'numero' => 'Ingrese un numero valido para la mascota.',
+                ]);
+            }
+
+            return $numeroValue;
+        }
+
+        if (!empty($codigo)) {
+            $numeroValue = $this->extractNumeroFromCodigo($codigo);
+
+            if ($numeroValue !== null) {
+                return $numeroValue;
+            }
+        }
+
+        $codigo = $codigo ?? $this->resolveCodigoForSpecies($data['especie_id']);
+        $numeroValue = $this->extractNumeroFromCodigo($codigo);
+
+        if ($numeroValue === null) {
+            throw ValidationException::withMessages([
+                'numero' => 'No se pudo generar el numero de la mascota.',
+            ]);
+        }
+
+        return $numeroValue;
+    }
+
     private function resolveCodigoForUpdate(Mascota $mascota, array $data): string
     {
         $currentEspecieId = $mascota->raza?->especie_id
@@ -138,15 +237,175 @@ class MascotaController extends Controller
         return $this->resolveCodigoForSpecies($data['especie_id'], $mascota->id);
     }
 
+    private function resolveNumeroForUpdate(Mascota $mascota, array $data, ?string $codigo = null): int
+    {
+        if (array_key_exists('numero', $data) && $data['numero'] !== null && $data['numero'] !== '') {
+            $numeroValue = filter_var($data['numero'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+            if ($numeroValue === false) {
+                throw ValidationException::withMessages([
+                    'numero' => 'Ingrese un numero valido para la mascota.',
+                ]);
+            }
+
+            return $numeroValue;
+        }
+
+        $currentEspecieId = $mascota->raza?->especie_id
+            ?? Raza::query()->whereKey($mascota->raza_id)->value('especie_id');
+
+        if ((int) $currentEspecieId === (int) $data['especie_id'] && !empty($mascota->numero)) {
+            return (int) $mascota->numero;
+        }
+
+        if (!empty($codigo)) {
+            $numeroValue = $this->extractNumeroFromCodigo($codigo);
+
+            if ($numeroValue !== null) {
+                return $numeroValue;
+            }
+        }
+
+        if ((int) $currentEspecieId === (int) $data['especie_id']) {
+            $numeroValue = $this->extractNumeroFromCodigo($mascota->codigo);
+
+            if ($numeroValue !== null) {
+                return $numeroValue;
+            }
+        }
+
+        $codigo = $this->resolveCodigoForSpecies($data['especie_id'], $mascota->id);
+        $numeroValue = $this->extractNumeroFromCodigo($codigo);
+
+        if ($numeroValue === null) {
+            throw ValidationException::withMessages([
+                'numero' => 'No se pudo generar el numero de la mascota.',
+            ]);
+        }
+
+        return $numeroValue;
+    }
+
     private function normalizeCodigo(?string $codigo): string
     {
         return mb_strtoupper(trim((string) $codigo));
     }
 
-    private function buildCodigoFromSpeciesAndNumber(int|string $especieId, int|string $numero): string
+    private function buildPublicMascotaData(Mascota $mascota): array
+    {
+        return [
+            'id' => $mascota->id,
+            'codigo' => $mascota->codigo,
+            'nombre' => $mascota->nombre,
+            'foto' => $mascota->foto,
+            'fotoUrl' => !empty($mascota->foto) ? asset('mascotas/' . $mascota->foto) : null,
+            'especie' => $mascota->raza?->especie?->nombre ?? $mascota->especie,
+            'raza' => $mascota->raza?->nombre ?? '',
+            'color_principal' => $mascota->color_principal,
+            'color_secundario' => $mascota->color_secundario,
+            'tamano' => $mascota->tamano,
+            'estado' => $mascota->estado,
+            'persona' => [
+                'id' => $mascota->persona?->id,
+                'cinit' => $mascota->persona?->cinit,
+                'nombre' => $mascota->persona?->nombre,
+                'paterno' => $mascota->persona?->paterno,
+                'materno' => $mascota->persona?->materno,
+                'telefono' => $mascota->persona?->telefono,
+                'direccion' => $mascota->persona?->direccion,
+                'zona' => $mascota->persona?->zona,
+                'distrito' => $mascota->persona?->distrito,
+            ],
+        ];
+    }
+
+    private function buildCredentialPdfData(Mascota $mascota): array
+    {
+        $publicLink = $this->buildPublicCredentialUrl($mascota->codigo);
+        $persona = $mascota->persona;
+        $nombrePropietario = trim(implode(' ', array_filter([
+            $persona?->nombre,
+            $persona?->paterno,
+            $persona?->materno,
+        ]))) ?: '-';
+        $fotoPath = $mascota->foto ? public_path('mascotas' . DIRECTORY_SEPARATOR . $mascota->foto) : null;
+
+        return [
+            'mascota' => [
+                'id' => $mascota->id,
+                'codigo' => $mascota->codigo,
+                'nombre' => $mascota->nombre,
+                'fotoUrl' => $this->buildDataUriFromPath($fotoPath),
+                'especie' => $mascota->raza?->especie?->nombre ?? $mascota->especie,
+                'raza' => $mascota->raza?->nombre ?? '-',
+                'color_principal' => $mascota->color_principal,
+                'color_secundario' => $mascota->color_secundario,
+                'tamano' => $mascota->tamano,
+                'estado' => $mascota->estado,
+                'publicLink' => $publicLink,
+                'qrSrc' => $this->buildQrDataUri($publicLink),
+            ],
+            'persona' => [
+                'nombre' => $nombrePropietario,
+                'cinit' => $persona?->cinit ?? '-',
+                'complemento' => $persona?->complemento ?? '',
+                'telefono' => $persona?->telefono ?? '-',
+                'direccion' => $persona?->direccion ?? '-',
+                'zona' => $persona?->zona ?? '-',
+                'distrito' => $persona?->distrito ?? '-',
+            ],
+        ];
+    }
+
+    private function buildPublicCredentialUrl(string $codigo): string
+    {
+        return url(env('URL_FRONT') . rawurlencode($this->normalizeCodigo($codigo)));
+    }
+
+    private function buildQrDataUri(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        $result = Builder::create()
+            ->writer(new PngWriter())
+            ->data($value)
+            ->encoding(new Encoding('UTF-8'))
+            ->errorCorrectionLevel(ErrorCorrectionLevel::Medium)
+            ->size(260)
+            ->margin(10)
+            ->build();
+
+        return $result->getDataUri();
+    }
+
+    private function buildDataUriFromPath(?string $path): ?string
+    {
+        if (empty($path) || !File::exists($path)) {
+            return null;
+        }
+
+        $mime = File::mimeType($path) ?: 'image/jpeg';
+
+        return 'data:' . $mime . ';base64,' . base64_encode(File::get($path));
+    }
+
+    private function extractNumeroFromCodigo(?string $codigo): ?int
+    {
+        $codigo = $this->normalizeCodigo($codigo);
+
+        if ($codigo === '' || !preg_match('/-(\d+)$/', $codigo, $matches)) {
+            return null;
+        }
+
+        return (int) $matches[1];
+    }
+
+    private function buildCodigoFromSpeciesAndNumber(int|string $especieId, int $numero): string
     {
         $especie = Especie::query()->findOrFail($especieId);
-        $numeroValue = filter_var($numero, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $numeroValue = filter_var($numero, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);// 
 
         if ($numeroValue === false) {
             throw ValidationException::withMessages([

@@ -1,5 +1,10 @@
 
 const routes = [
+  {
+    path: '/credencial-mascota/:codigo?',
+    component: () => import('pages/CredencialMascotaPublica.vue'),
+    meta: { public: true }
+  },
     {
     path: '/',
     component: () => import('pages/Login.vue'),

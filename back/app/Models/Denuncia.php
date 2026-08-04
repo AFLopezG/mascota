@@ -22,6 +22,7 @@ class Denuncia extends Model
         'tamanio',
         'estado',
         'observacion',
+        'fiscalia',
         'nom_afectado',
         'edad',
         'telefono',
@@ -50,14 +51,14 @@ class Denuncia extends Model
         return $this->belongsTo(Mascota::class);
     }
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public function raza(): BelongsTo
     {
         return $this->belongsTo(Raza::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function tipos(): BelongsToMany

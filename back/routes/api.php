@@ -17,6 +17,8 @@ use App\Http\Controllers\VacunaController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login',[\App\Http\Controllers\UserController::class,'login'])->name('login');
+Route::get('/public/mascota/{codigo}', [MascotaController::class, 'publicShow']);
+Route::get('/public/mascota/{codigo}/pdf', [MascotaController::class, 'publicCredentialPdf']);
 
 //Route::middleware(['auth:sanctum', EnsureAccountIsValid::class])->group(function () {
 Route::group(['middleware'=>'auth:sanctum'],function (){
@@ -55,7 +57,8 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::resource('/rol',\App\Http\Controllers\RolController::class);
     Route::resource('/permiso',\App\Http\Controllers\PermisoController::class);
     Route::resource('/persona', PersonaController::class);
-    Route::resource('/mascota', MascotaController::class);
+Route::post('/mascota/{mascota}/foto', [MascotaController::class, 'updateFoto']);
+Route::resource('/mascota', MascotaController::class);
     Route::resource('/vacuna', VacunaController::class);
     Route::resource('/denuncia', DenunciaController::class);
     Route::resource('/denuncia-tipo', DenunciaTipoController::class);

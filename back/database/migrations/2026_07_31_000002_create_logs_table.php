@@ -16,13 +16,11 @@ return new class extends Migration
             $table->text('obser')->nullable();
             $table->unsignedBigInteger('denuncia_id');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('denuncia_tipo_id');
             $table->unsignedBigInteger('proceso_id');
             $table->timestamps();
 
             $table->foreign('denuncia_id')->references('id')->on('denuncias')->cascadeOnDelete();
             $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('denuncia_tipo_id')->references('id')->on('denuncia_tipos');
             $table->foreign('proceso_id')->references('id')->on('procesos');
         });
     }

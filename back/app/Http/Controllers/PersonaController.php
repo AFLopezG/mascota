@@ -9,7 +9,7 @@ class PersonaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Persona::query()->with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']);
+        $query = Persona::query()->with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas.campania']);
 
         $term = $request->filled('q') ? $this->normalizeText($request->input('q')) : null;
 
@@ -46,14 +46,14 @@ class PersonaController extends Controller
 
         return response()->json([
             'message' => $wasNew ? 'Persona registrada.' : 'Persona actualizada.',
-            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
+            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas.campania']),
         ], $wasNew ? 201 : 200);
     }
 
     public function show(Persona $persona)
     {
         return response()->json([
-            'data' => $persona->load(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
+            'data' => $persona->load(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas.campania']),
         ]);
     }
 
@@ -65,7 +65,7 @@ class PersonaController extends Controller
 
         return response()->json([
             'message' => 'Persona actualizada.',
-            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas']),
+            'data' => $persona->fresh(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas.campania']),
         ]);
     }
 
@@ -88,7 +88,7 @@ class PersonaController extends Controller
         $cinit = $this->normalizeText($data['cinit'] ?? null);  
         $complemento = $this->normalizeOptionalText($data['complemento'] ?? null);
 
-        $query = Persona::with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas'])->where('cinit', $cinit);
+        $query = Persona::with(['mascotas.categoria', 'mascotas.raza.especie', 'mascotas.campania', 'mascotas.vacunas.campania'])->where('cinit', $cinit);
 
         if ($complemento !== null && $complemento !== '') {
             $query->where('complemento', $complemento);

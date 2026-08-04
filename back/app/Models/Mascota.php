@@ -11,6 +11,7 @@ class Mascota extends Model
 
     protected $fillable = [
         'codigo',
+        'numero',
         'fec_reg',
         'foto',
         'nombre',

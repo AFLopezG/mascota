@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('tamanio')->nullable();
             $table->string('estado')->nullable();
+            $table->string('fiscalia')->nullable();
             $table->text('observacion')->nullable();
 
             $table->string('nom_afectado');
@@ -32,13 +33,13 @@ return new class extends Migration
             $table->string('resultado');
             $table->string('obs');
             
-            $table->unsignedBigInteger('raza_id');
+            $table->unsignedBigInteger('raza_id')->nullable();
             $table->foreign('raza_id')->references('id')->on('razas');
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users');
             $table->unsignedBigInteger('persona_id');
             $table->foreign('persona_id')->references('id')->on('personas');
-            $table->unsignedBigInteger('mascota_id');
+            $table->unsignedBigInteger('mascota_id')->nullable();
             $table->foreign('mascota_id')->references('id')->on('mascotas');
             $table->timestamps();
         });

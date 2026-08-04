@@ -95,6 +95,8 @@ class DatabaseSeeder extends Seeder
             EspecieSeeder::class,
             DenunciaTipoSeeder::class,
             ProcesoSeeder::class,
+            CategoriaSeeder::class,
+            CampaniaTipoSeeder::class,
         ]);
     }
 }
