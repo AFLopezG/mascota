@@ -131,6 +131,26 @@ class MascotaController extends Controller
         ]);
     }
 
+    public function updateFallecimiento(Request $request, Mascota $mascota): JsonResponse
+    {
+        $validated = $request->validate([
+            'fec_fallecimiento' => ['nullable', 'date'],
+            'causa_fallecimiento' => ['nullable', 'string', 'max:255'],
+            'observacion' => ['nullable', 'string'],
+        ]);
+
+        $mascota->estado = 'FALLECIDO';
+        $mascota->fec_fallecimiento = $validated['fec_fallecimiento'] ?? null;
+        $mascota->causa_fallecimiento = $this->normalizeOptionalText($validated['causa_fallecimiento'] ?? null);
+        $mascota->observacion = $validated['observacion'] ?? null;
+        $mascota->save();
+
+        return response()->json([
+            'message' => 'Fallecimiento registrado correctamente.',
+            'data' => $mascota->fresh(['persona', 'raza.especie', 'categoria', 'campania']),
+        ]);
+    }
+
     public function destroy(Mascota $mascota)
     {
         $this->deleteFoto($mascota);
@@ -308,6 +328,7 @@ class MascotaController extends Controller
             'persona' => [
                 'id' => $mascota->persona?->id,
                 'cinit' => $mascota->persona?->cinit,
+                'complemento' => $mascota->persona?->complemento,
                 'nombre' => $mascota->persona?->nombre,
                 'paterno' => $mascota->persona?->paterno,
                 'materno' => $mascota->persona?->materno,

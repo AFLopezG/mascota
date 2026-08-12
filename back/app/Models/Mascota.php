@@ -23,6 +23,8 @@ class Mascota extends Model
         'tamano',
         'peso',
         'estado',
+        'fec_fallecimiento',
+        'causa_fallecimiento',
         'particular',
         'observacion',
         'sexo',
@@ -37,6 +39,7 @@ class Mascota extends Model
     protected $casts = [
         'fec_reg' => 'date',
         'fec_nac' => 'date',
+        'fec_fallecimiento' => 'date',
         'fec_esterilizacion' => 'date',
         'esterilizado' => 'boolean',
     ];

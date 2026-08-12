@@ -297,11 +297,22 @@
     $persona = $persona ?? [];
     $nombrePropietario = trim(($persona['nombre'] ?? '') . ' ' . ($persona['paterno'] ?? '') . ' ' . ($persona['materno'] ?? ''));
     $nombrePropietario = $nombrePropietario !== '' ? $nombrePropietario : '-';
+    $documentoPropietario = trim((string) ($persona['cinit'] ?? ''));
+    if ($documentoPropietario !== '' && !empty($persona['complemento'])) {
+        $documentoPropietario .= '-' . trim((string) $persona['complemento']);
+    }
+    $documentoPropietario = $documentoPropietario !== '' ? $documentoPropietario : '-';
     $telefonoPropietario = trim((string) ($persona['telefono'] ?? ''));
     if ($telefonoPropietario === '') {
         $telefonoPropietario = trim((string) ($persona['celular'] ?? ''));
     }
     $telefonoPropietario = $telefonoPropietario !== '' ? $telefonoPropietario : '-';
+    $ubicacionPropietario = trim(implode(' | ', array_filter([
+        trim((string) ($persona['direccion'] ?? '')),
+        trim((string) ($persona['zona'] ?? '')),
+        trim((string) ($persona['distrito'] ?? '')),
+    ])));
+    $ubicacionPropietario = $ubicacionPropietario !== '' ? $ubicacionPropietario : '-';
 @endphp
 
 <div class="sheet">
@@ -359,7 +370,13 @@
                     <div class="owner__label">Propietario</div>
                     <div class="owner__name">{{ $nombrePropietario }}</div>
                     <div class="owner__meta">
+                        CI: {{ $documentoPropietario }}
+                    </div>
+                    <div class="owner__meta">
                         Tel/Cel: {{ $telefonoPropietario }}
+                    </div>
+                    <div class="owner__meta">
+                        {{ $ubicacionPropietario }}
                     </div>
                 </div>
             </div>
@@ -381,7 +398,9 @@
                         <div class="back-owner">
                             <div class="back-owner__label">Propietario</div>
                             <div class="back-owner__name">{{ $nombrePropietario }}</div>
+                            <div class="back-owner__meta">CI: {{ $documentoPropietario }}</div>
                             <div class="back-owner__meta">Tel/Cel: {{ $telefonoPropietario }}</div>
+                            <div class="back-owner__meta">{{ $ubicacionPropietario }}</div>
                         </div>
                     </div>
                 </div>

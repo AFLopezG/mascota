@@ -63,10 +63,7 @@
                     </template>
                   </q-input>
 
-                  <div class="row items-center justify-between">
-                    <q-checkbox v-model="remember" label="Recordarme" />
-                    <span class="text-caption text-grey-7">Material Design 3</span>
-                  </div>
+
 
                   <q-btn
                     class="full-width"

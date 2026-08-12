@@ -26,6 +26,11 @@ class CampaniaController extends Controller
                             ->orWhereDate('fec_fin', '>=', now()->toDateString());
                     });
             })
+            ->when($request->boolean('vacunacion'), function ($query) {
+                $query->whereHas('campaniaTipo', function ($subQuery) {
+                    $subQuery->whereRaw('UPPER(nombre) LIKE ?', ['%VACUN%']);
+                });
+            })
             ->orderByDesc('fec_ini')
             ->get();
     }

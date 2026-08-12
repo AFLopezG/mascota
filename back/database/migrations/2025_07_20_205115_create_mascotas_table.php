@@ -27,6 +27,8 @@ return new class extends Migration
             $table->text('particular')->nullable();
             $table->double('peso')->nullable();
             $table->string('estado')->default('ACTIVO'); //ACTIVO, PERDIDO, ENCONTRADO, FALLECIDO, ADOPTADO OTRO
+            $table->date('fec_fallecimiento')->nullable();
+            $table->string('causa_fallecimiento')->nullable();
             $table->text('observacion')->nullable();
             $table->string('sexo');
             $table->boolean('esterilizado')->default(false);

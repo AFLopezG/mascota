@@ -34,7 +34,19 @@ export const globalStore = defineStore('global', {
     bool_registrar_campanias: false,
     bool_modificar_campanias: false,
     bool_anular_campanias: false,
-    isLoggedIn: !!localStorage.getItem('tokenExpendio')
+    bool_registro_persona_mascota: false,
+    bool_busqueda: false,
+    bool_denuncia: false,
+    bool_reporte_denuncia: false,
+    bool_tipo_denuncia: false,
+    bool_anular_registro_vacuna: false,
+    bool_places: false,
+    bool_registrar_places: false,
+    bool_modificar_places: false,
+    bool_eliminar_places: false,
+    bool_registro_vacunas: false,
+    bool_registrar_registro_vacuna: false,
+    isLoggedIn: !!localStorage.getItem('tokenMascota'),
   }),
   getters: {
     doubleCount: (state) => state.counter * 2

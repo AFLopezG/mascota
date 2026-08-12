@@ -223,6 +223,7 @@
 <script>
 import moment from 'moment'
 import AppSectionHeader from 'components/AppSectionHeader.vue'
+import { globalStore } from 'src/stores/globalStore'
 
 export default {
   name: 'BusquedaPersona',
@@ -231,6 +232,7 @@ export default {
   },
   data () {
     return {
+      store: globalStore(),
       buscando: false,
       guardandoVacuna: false,
       personaOptions: [],
@@ -415,6 +417,16 @@ export default {
     }
   },
   async mounted () {
+    if (!this.store.isLoggedIn) {
+      this.$router.push('/')
+      return
+    }
+
+    if (!this.store.bool_busqueda) {
+      this.$router.push('/home')
+      return
+    }
+
     await this.cargarCampaniasVigentes()
   }
 }

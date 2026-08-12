@@ -6,19 +6,20 @@ use App\Http\Controllers\EspecieController;
 use App\Http\Controllers\PermisoController;
 use App\Http\Controllers\MascotaController;
 use App\Http\Controllers\PersonaController;
+use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\RazaController;
 use App\Http\Controllers\CampaniaTipoController;
 use App\Http\Controllers\DenunciaController;
 use App\Http\Controllers\DenunciaTipoController;
 use App\Http\Controllers\ProcesoController;
+use App\Http\Controllers\RegistroVacunaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacunaController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login',[\App\Http\Controllers\UserController::class,'login'])->name('login');
 Route::get('/public/mascota/{codigo}', [MascotaController::class, 'publicShow']);
-Route::get('/public/mascota/{codigo}/pdf', [MascotaController::class, 'publicCredentialPdf']);
 
 //Route::middleware(['auth:sanctum', EnsureAccountIsValid::class])->group(function () {
 Route::group(['middleware'=>'auth:sanctum'],function (){
@@ -35,6 +36,7 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::get('/campania-tipo', [CampaniaTipoController::class, 'index']);
     Route::get('/campania', [CampaniaController::class, 'index']);
     Route::get('/proceso', [ProcesoController::class, 'index']);
+    Route::get('/denuncia/reporte', [DenunciaController::class, 'reporte']);
     Route::post('/denuncia/{denuncia}/logs', [DenunciaController::class, 'storeLog']);
     Route::post('/campania', [CampaniaController::class, 'store']);
     Route::put('/campania/{campania}', [CampaniaController::class, 'update']);
@@ -57,11 +59,16 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::resource('/rol',\App\Http\Controllers\RolController::class);
     Route::resource('/permiso',\App\Http\Controllers\PermisoController::class);
     Route::resource('/persona', PersonaController::class);
-Route::post('/mascota/{mascota}/foto', [MascotaController::class, 'updateFoto']);
-Route::resource('/mascota', MascotaController::class);
+    Route::resource('/place', PlaceController::class);
+    Route::resource('/registro-vacuna', RegistroVacunaController::class);
+    Route::put('/registro-vacuna/{registroVacuna}/anular', [RegistroVacunaController::class, 'anular']);
+    Route::post('/mascota/{mascota}/foto', [MascotaController::class, 'updateFoto']);
+    Route::post('/mascota/{mascota}/fallecimiento', [MascotaController::class, 'updateFallecimiento']);
+    Route::resource('/mascota', MascotaController::class);
     Route::resource('/vacuna', VacunaController::class);
     Route::resource('/denuncia', DenunciaController::class);
     Route::resource('/denuncia-tipo', DenunciaTipoController::class);
 
+    Route::get('/public/mascota/{codigo}/pdf', [MascotaController::class, 'publicCredentialPdf']);
 
 });

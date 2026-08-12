@@ -72,7 +72,7 @@
 
       <q-scroll-area class="fit">
         <div class="q-pa-md q-gutter-md">
-          <q-list class="q-gutter-xs">
+          <q-list v-if="hasGeneralAccess" class="q-gutter-xs">
             <q-item-label header class="text-uppercase text-weight-bold text-grey-6 q-pb-xs">
               General
             </q-item-label>
@@ -87,7 +87,7 @@
               </q-item-section>
             </q-item>
 
-            <q-item clickable v-ripple to="/registro-persona-mascota" exact class="app-nav-item">
+            <q-item v-if="store.bool_registro_persona_mascota" clickable v-ripple to="/registro-persona-mascota" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_health_and_safety" />
               </q-item-section>
@@ -97,7 +97,7 @@
               </q-item-section>
             </q-item>
 
-            <q-item clickable v-ripple to="/buscar-persona" exact class="app-nav-item">
+            <q-item v-if="store.bool_busqueda" clickable v-ripple to="/buscar-persona" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_manage_search" />
               </q-item-section>
@@ -106,7 +106,16 @@
                 <q-item-label caption>Consulta y vacunas</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable v-ripple to="/denuncias" exact class="app-nav-item">
+            <q-item v-if="store.bool_registro_vacunas" clickable v-ripple to="/registro-vacunas" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_vaccines" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Registro vacunas</q-item-label>
+                <q-item-label caption>Alta y listado por fechas</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="store.bool_denuncia" clickable v-ripple to="/denuncias" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_report" />
               </q-item-section>
@@ -115,7 +124,16 @@
                 <q-item-label caption>Registro y seguimiento</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable v-ripple to="/denuncia-tipos" exact class="app-nav-item">
+            <q-item v-if="store.bool_reporte_denuncia" clickable v-ripple to="/reporte-denuncias" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_assessment" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Reporte denuncia</q-item-label>
+                <q-item-label caption>Fechas, tipo y logs</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="store.bool_tipo_denuncia" clickable v-ripple to="/denuncia-tipos" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_view_list" />
               </q-item-section>
@@ -196,6 +214,14 @@
                 <q-item-label caption>Programación y control</q-item-label>
               </q-item-section>
             </q-item>
+
+            <q-item v-if="store.bool_places" clickable v-ripple to="/places" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_location_on" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Lugares</q-item-label>
+                <q-item-label caption>Catálogo de ubicaciones</q-item-label>
+              </q-item-section>
+            </q-item>
           </q-list>
         </div>
       </q-scroll-area>
@@ -228,7 +254,17 @@ const hasCatalogAccess = computed(() => (
   store.bool_razas ||
   store.bool_categorias ||
   store.bool_campania_tipos ||
-  store.bool_campanias
+  store.bool_campanias ||
+  store.bool_places
+))
+
+const hasGeneralAccess = computed(() => (
+  store.bool_registro_persona_mascota ||
+  store.bool_busqueda ||
+  store.bool_registro_vacunas ||
+  store.bool_denuncia ||
+  store.bool_reporte_denuncia ||
+  store.bool_tipo_denuncia
 ))
 
 const hasAdminAccess = computed(() => store.bool_roles || store.bool_usuarios)

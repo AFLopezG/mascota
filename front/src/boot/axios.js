@@ -44,7 +44,19 @@ export default boot(({ app,router }) => {
     store.bool_campanias = false,
     store.bool_registrar_campanias = false,
     store.bool_modificar_campanias = false,
-    store.bool_anular_campanias = false
+    store.bool_anular_campanias = false,
+    store.bool_registro_persona_mascota = false,
+    store.bool_busqueda = false,
+    store.bool_denuncia = false,
+    store.bool_reporte_denuncia = false,
+    store.bool_tipo_denuncia = false,
+    store.bool_anular_registro_vacuna = false,
+    store.bool_places = false,
+    store.bool_registrar_places = false,
+    store.bool_modificar_places = false,
+    store.bool_eliminar_places = false,
+    store.bool_registro_vacunas = false,
+    store.bool_registrar_registro_vacuna = false
   }
 
   function setPermissions(permisos) {
@@ -80,13 +92,25 @@ export default boot(({ app,router }) => {
       if(r.id===27) store.bool_registrar_campania_tipos = true
       if(r.id===28) store.bool_modificar_campania_tipos = true
       if(r.id===29) store.bool_eliminar_campania_tipos = true
+      if(r.id===30) store.bool_registro_persona_mascota = true
+      if(r.id===31) store.bool_busqueda = true
+      if(r.id===32) store.bool_denuncia = true
+      if(r.id===33) store.bool_reporte_denuncia = true
+      if(r.id===34) store.bool_tipo_denuncia = true
+      if(r.id===35) store.bool_anular_registro_vacuna = true
+      if(r.id===36) store.bool_places = true
+      if(r.id===37) store.bool_registrar_places = true
+      if(r.id===38) store.bool_modificar_places = true
+      if(r.id===39) store.bool_eliminar_places = true
+      if(r.id===40) store.bool_registro_vacunas = true
+      if(r.id===41) store.bool_registrar_registro_vacuna = true
 
 
     });
   }
 
   async function checkAuth() {
-    const token = localStorage.getItem('tokenExpendio');
+    const token = localStorage.getItem('tokenMascota');
     const currentRoute = router.currentRoute?.value
     const isPublicRoute = !!currentRoute?.matched?.some(record => record.meta?.public)
 
@@ -116,7 +140,7 @@ export default boot(({ app,router }) => {
           store.rol = datos.user.rol
           store.isLoggedIn = true
           setPermissions(datos.user.rol.permisos)
-      localStorage.setItem('tokenExpendio', datos.token);
+      localStorage.setItem('tokenMascota', datos.token);
       api.defaults.headers.common.Authorization = `Bearer ${datos.token}`;
       router.push('/home');
 
@@ -139,7 +163,7 @@ export default boot(({ app,router }) => {
       store.rol = {};
       store.isLoggedIn = false;
       resetPermissions();
-      localStorage.removeItem('tokenExpendio');
+      localStorage.removeItem('tokenMascota');
       delete api.defaults.headers.common.Authorization;
       router.push('/');
       app.config.globalProperties.$q.loading.hide();
@@ -151,7 +175,7 @@ export default boot(({ app,router }) => {
     store.isLoggedIn = false;
     store.rol = {};
     resetPermissions(); 
-    localStorage.removeItem('tokenExpendio');
+    localStorage.removeItem('tokenMascota');
     delete api.defaults.headers.common.Authorization;
     router.push('/');
   }

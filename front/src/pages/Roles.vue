@@ -136,6 +136,7 @@
                 :label="permiso.nombre"
                 v-model="permiso.estado"
                 @update:model-value="togglePadre(pIndex, $event)"
+                dense
               />
 
               <div v-if="permiso.estado" class="q-pl-xl q-mt-sm column q-gutter-xs">
@@ -144,6 +145,7 @@
                   :key="hijo.id"
                   :label="hijo.nombre"
                   v-model="hijo.estado"
+                  dense
                 />
               </div>
             </q-card>

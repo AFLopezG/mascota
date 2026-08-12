@@ -3,6 +3,7 @@
 use App\Http\Controllers\CampaniaController;
 use App\Http\Controllers\CampaniaTipoController;
 use App\Http\Controllers\EspecieController;
+use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RazaController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,4 +44,10 @@ Route::prefix('catalogos')->group(function () {
     Route::put('/campanias/{campania}', [CampaniaController::class, 'update'])->name('catalogos.campanias.update');
     Route::put('/campanias/{campania}/anular', [CampaniaController::class, 'anular'])->name('catalogos.campanias.anular');
     Route::delete('/campanias/{campania}', [CampaniaController::class, 'destroy'])->name('catalogos.campanias.destroy');
+
+    Route::get('/places', [PlaceController::class, 'manage'])->name('catalogos.places');
+    Route::post('/places', [PlaceController::class, 'store'])->name('catalogos.places.store');
+    Route::get('/places/{place}/editar', [PlaceController::class, 'edit'])->name('catalogos.places.edit');
+    Route::put('/places/{place}', [PlaceController::class, 'update'])->name('catalogos.places.update');
+    Route::delete('/places/{place}', [PlaceController::class, 'destroy'])->name('catalogos.places.destroy');
 });

@@ -16,6 +16,88 @@ use Illuminate\Validation\ValidationException;
 
 class DenunciaController extends Controller
 {
+    public function reporte(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date'],
+            'denuncia_tipo_id' => ['nullable', 'integer', 'exists:denuncia_tipos,id'],
+        ]);
+
+        $query = Denuncia::query()
+            ->with([
+                'persona',
+                'mascota.raza.especie',
+                'mascota.categoria',
+                'raza.especie',
+                'user',
+                'tipos',
+                'logs' => function ($relation) {
+                    $relation->with(['proceso', 'user'])->orderByDesc('fechaHora');
+                },
+            ]);
+
+        if (!empty($data['fecha_desde'])) {
+            $query->whereDate('fec_denuncia', '>=', $data['fecha_desde']);
+        }
+
+        if (!empty($data['fecha_hasta'])) {
+            $query->whereDate('fec_denuncia', '<=', $data['fecha_hasta']);
+        }
+
+        if (!empty($data['denuncia_tipo_id'])) {
+            $query->whereHas('tipos', function ($relation) use ($data) {
+                $relation->where('denuncia_tipos.id', $data['denuncia_tipo_id']);
+            });
+        }
+
+        $denuncias = $query
+            ->orderByDesc('fec_denuncia')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (Denuncia $denuncia) {
+                $logs = $denuncia->logs->values();
+
+                return [
+                    'id' => $denuncia->id,
+                    'numero' => $denuncia->numero,
+                    'fec_denuncia' => $denuncia->fec_denuncia,
+                    'direccion' => $denuncia->direccion,
+                    'descripcion' => $denuncia->descripcion,
+                    'zona' => $denuncia->zona,
+                    'color' => $denuncia->color,
+                    'tamanio' => $denuncia->tamanio,
+                    'estado' => $denuncia->estado,
+                    'observacion' => $denuncia->observacion,
+                    'fiscalia' => $denuncia->fiscalia,
+                    'nom_afectado' => $denuncia->nom_afectado,
+                    'edad' => $denuncia->edad,
+                    'telefono' => $denuncia->telefono,
+                    'dir_inicidente' => $denuncia->dir_inicidente,
+                    'tipo_lesion' => $denuncia->tipo_lesion,
+                    'dias_obser' => $denuncia->dias_obser,
+                    'resultado' => $denuncia->resultado,
+                    'obs' => $denuncia->obs,
+                    'persona' => $denuncia->persona,
+                    'mascota' => $denuncia->mascota,
+                    'raza' => $denuncia->raza,
+                    'user' => $denuncia->user,
+                    'tipos' => $denuncia->tipos,
+                    'logs' => $logs,
+                    'current_log' => $logs->first(),
+                ];
+            });
+
+        return response()->json([
+            'data' => $denuncias,
+            'filters' => [
+                'fecha_desde' => $data['fecha_desde'] ?? null,
+                'fecha_hasta' => $data['fecha_hasta'] ?? null,
+                'denuncia_tipo_id' => $data['denuncia_tipo_id'] ?? null,
+            ],
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json(
@@ -50,7 +132,6 @@ class DenunciaController extends Controller
             $denuncia->tipos()->sync($tipoIds);
 
             $firstProcess = Proceso::orderBy('orden')->firstOrFail();
-            $principalTipoId = (int) $tipoIds[0];
             $denuncia->estado = $firstProcess->descripcion;
             $denuncia->save();
 
@@ -61,7 +142,6 @@ class DenunciaController extends Controller
                 'obser' => 'Registro inicial de denuncia',
                 'denuncia_id' => $denuncia->id,
                 'user_id' => $request->user()->id,
-                'denuncia_tipo_id' => $principalTipoId,
                 'proceso_id' => $firstProcess->id,
             ]);
 

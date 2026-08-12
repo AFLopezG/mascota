@@ -292,7 +292,18 @@
                   @update:model-value="syncMascota"
                 />
               </div>
-              <div class="col-12 col-md-4">
+
+              <div class="col-12" v-if="!form.mascota_id">
+                <q-banner rounded class="bg-orange-1 text-orange-10">
+                  Si la mascota no esta registrada, complete especie, raza, color y tamano manualmente.
+                </q-banner>
+              </div>
+              <div class="col-12" v-if="personaSeleccionadaForm">
+                <q-banner rounded class="bg-blue-1 text-blue-10">
+                  Se recuperaron los datos de {{ personaNombre(personaSeleccionadaForm) }}.
+                </q-banner>
+              </div>
+              <div class="col-12 col-md-3">
                 <q-select
                   v-model="form.especie_id"
                   :options="especieOptions"
@@ -308,7 +319,7 @@
                   @update:model-value="onEspecieChange"
                 />
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-3">
                 <q-select
                   v-model="form.raza_id"
                   :options="razaOptionsFiltradas"
@@ -326,15 +337,33 @@
                   @filter="filtrarRazas"
                 />
               </div>
-              <div class="col-12" v-if="!form.mascota_id">
-                <q-banner rounded class="bg-orange-1 text-orange-10">
-                  Si la mascota no esta registrada, complete especie, raza, color y tamano manualmente.
-                </q-banner>
+              <div class="col-12 col-md-3">
+                <q-select
+                  v-model="form.color"
+                  :options="colorOptions"
+                  label="Color"
+                  outlined
+                  dense
+                  clearable
+                  :disable="!!form.mascota_id"
+                  hint="Selecciona un color o escribe uno personalizado."
+                  use-input
+                  new-value-mode="add-unique"
+                />
               </div>
-              <div class="col-12" v-if="personaSeleccionadaForm">
-                <q-banner rounded class="bg-blue-1 text-blue-10">
-                  Se recuperaron los datos de {{ personaNombre(personaSeleccionadaForm) }}.
-                </q-banner>
+              <div class="col-12 col-md-3">
+                <q-select
+                  v-model="form.tamanio"
+                  :options="tamanioOptions"
+                  label="Tamano"
+                  outlined
+                  dense
+                  clearable
+                  :disable="!!form.mascota_id"
+                  hint="Selecciona un tamaño o escribe uno personalizado."
+                  use-input
+                  new-value-mode="add-unique"
+                />
               </div>
               <div class="col-12">
                 <q-select
@@ -358,12 +387,7 @@
               <div class="col-12 col-md-4">
                 <q-input v-model="form.zona" label="Zona" outlined dense />
               </div>
-              <div class="col-12 col-md-4">
-                <q-input v-model="form.color" label="Color" outlined dense :disable="!!form.mascota_id" />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input v-model="form.tamanio" label="Tamanio" outlined dense :disable="!!form.mascota_id" />
-              </div>
+
               <div class="col-12 col-md-4">
                 <q-input v-model="form.fiscalia" label="Fiscalia" outlined dense hint="Opcional" />
               </div>
@@ -514,6 +538,25 @@ const emptyLogForm = () => ({
   obser: ''
 })
 
+const COLOR_OPTIONS = [
+  'Blanco',
+  'Negro',
+  'Marron',
+  'Gris',
+  'Cafe',
+  'Dorado',
+  'Beige',
+  'Moteado',
+  'Tricolor'
+]
+
+const TAMANIO_OPTIONS = [
+  'Pequeno',
+  'Mediano',
+  'Grande',
+  'Muy grande'
+]
+
 export default {
   name: 'DenunciasPage',
   components: {
@@ -584,6 +627,12 @@ export default {
         value: tipo.id
       }))
     },
+    colorOptions () {
+      return COLOR_OPTIONS
+    },
+    tamanioOptions () {
+      return TAMANIO_OPTIONS
+    },
     selectedDenunciaTipoIds () {
       return Array.isArray(this.form.denuncia_tipo_ids) ? this.form.denuncia_tipo_ids : []
     },
@@ -634,6 +683,11 @@ export default {
   created () {
     if (!this.store.isLoggedIn) {
       this.$router.push('/')
+      return
+    }
+
+    if (!this.store.bool_denuncia) {
+      this.$router.push('/home')
       return
     }
 
