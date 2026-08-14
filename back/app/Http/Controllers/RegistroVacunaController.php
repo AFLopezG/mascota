@@ -78,6 +78,16 @@ class RegistroVacunaController extends Controller
             })
             ->values();
 
+        $resumenHealthCenters = $rows
+            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->healthCenter) ? $registro->healthCenter->nombre : (string)($registro->healthCenter ?: 'SIN CENTRO DE SALUD'))
+            ->map(function ($items, string $nombre) {
+                return [
+                    'nombre' => $nombre,
+                    'cantidad' => $items->count(),
+                ];
+            })
+            ->values();
+
         $resumenMenor = $rows
             ->groupBy(fn (RegistroVacuna $registro) => $registro->menor ? 'SI' : 'NO')
             ->map(function ($items, string $valor) {
@@ -94,6 +104,7 @@ class RegistroVacunaController extends Controller
                 'total' => $rows->count(),
                 'especies' => $resumenEspecies,
                 'places' => $resumenPlaces,
+                'health_centers' => $resumenHealthCenters,
                 'menor' => $resumenMenor,
             ],
             'filters' => $data,
@@ -118,6 +129,22 @@ class RegistroVacunaController extends Controller
             ]);
         }
 
+        $user = $request->user();
+        $placeId = $user?->place_id;
+        $healthCenterId = $user?->health_center_id;
+
+        if ($placeId === null) {
+            throw ValidationException::withMessages([
+                'place_id' => 'El usuario no tiene un lugar asignado.',
+            ]);
+        }
+
+        if ($healthCenterId === null) {
+            throw ValidationException::withMessages([
+                'health_center_id' => 'El usuario no tiene un centro de salud asignado.',
+            ]);
+        }
+
         $registro = new RegistroVacuna();
         $registro->cedula = $this->normalizeOptionalText($data['cedula'] ?? null);
         $registro->nombre = $this->normalizeOptionalText($data['nombre'] ?? null);
@@ -133,8 +160,8 @@ class RegistroVacunaController extends Controller
         $registro->campania_id = $data['campania_id'];
         $registro->especie_id = $data['especie_id'];
         $registro->raza_id = $data['raza_id'] ?? null;
-        $registro->place_id = $data['place_id'];
-        $registro->health_center_id = $data['health_center_id'] ?? Auth::user()?->health_center_id;
+        $registro->place_id = $placeId;
+        $registro->health_center_id = $healthCenterId;
         $registro->user_id = $userId;
 
         if ($request->hasFile('foto')) {
@@ -168,6 +195,21 @@ class RegistroVacunaController extends Controller
         $this->ensureCanCreate($request);
 
         $data = $request->validated();
+        $user = $request->user();
+        $placeId = $user?->place_id;
+        $healthCenterId = $user?->health_center_id;
+
+        if ($placeId === null) {
+            throw ValidationException::withMessages([
+                'place_id' => 'El usuario no tiene un lugar asignado.',
+            ]);
+        }
+
+        if ($healthCenterId === null) {
+            throw ValidationException::withMessages([
+                'health_center_id' => 'El usuario no tiene un centro de salud asignado.',
+            ]);
+        }
 
         $registroVacuna->cedula = $this->normalizeOptionalText($data['cedula'] ?? null);
         $registroVacuna->nombre = $this->normalizeOptionalText($data['nombre'] ?? null);
@@ -188,8 +230,8 @@ class RegistroVacunaController extends Controller
         $registroVacuna->campania_id = $data['campania_id'];
         $registroVacuna->especie_id = $data['especie_id'];
         $registroVacuna->raza_id = $data['raza_id'] ?? null;
-        $registroVacuna->place_id = $data['place_id'];
-        $registroVacuna->health_center_id = $data['health_center_id'] ?? Auth::user()?->health_center_id;
+        $registroVacuna->place_id = $placeId;
+        $registroVacuna->health_center_id = $healthCenterId;
 
         if ($request->hasFile('foto')) {
             if (!empty($registroVacuna->foto)) {

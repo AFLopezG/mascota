@@ -367,7 +367,8 @@ export default {
         .map(raza => ({
           label: `${raza.nombre}`,
           value: raza.id
-        }))    }
+        }))    
+      }
   },
   created () {
     if (!this.store.isLoggedIn) {

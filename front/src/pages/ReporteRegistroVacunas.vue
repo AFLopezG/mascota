@@ -3,7 +3,7 @@
     <div class="column q-gutter-lg">
       <AppSectionHeader
         title="Reporte de vacunas"
-        subtitle="Consulta registros por rango de fechas y revisa los totales por especie, lugar y condición de menor."
+        subtitle="Consulta registros por rango de fechas y revisa los totales por especie, lugar, centro de salud y condicion de menor."
         icon="sym_r_assessment"
       >
         <template #actions>
@@ -43,27 +43,34 @@
           <q-card class="app-soft-card q-pa-lg">
             <div class="text-caption text-grey-6">Especies</div>
             <div class="text-h4 text-weight-bold">{{ summarySpeciesRows.length }}</div>
-            <div class="text-caption text-grey-7 q-mt-sm">Categorías distintas encontradas.</div>
+            <div class="text-caption text-grey-7 q-mt-sm">Categorias distintas encontradas.</div>
           </q-card>
         </div>
         <div class="col-12 col-md-3">
           <q-card class="app-soft-card q-pa-lg">
             <div class="text-caption text-grey-6">Lugares</div>
             <div class="text-h4 text-weight-bold">{{ summaryPlaceRows.length }}</div>
-            <div class="text-caption text-grey-7 q-mt-sm">Puntos de vacunación distintos.</div>
+            <div class="text-caption text-grey-7 q-mt-sm">Puntos de vacunacion distintos.</div>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-3">
+          <q-card class="app-soft-card q-pa-lg">
+            <div class="text-caption text-grey-6">Centros de salud</div>
+            <div class="text-h4 text-weight-bold">{{ summaryHealthCenterRows.length }}</div>
+            <div class="text-caption text-grey-7 q-mt-sm">Centros distintos en el rango.</div>
           </q-card>
         </div>
         <div class="col-12 col-md-3">
           <q-card class="app-soft-card q-pa-lg">
             <div class="text-caption text-grey-6">Menores</div>
             <div class="text-h4 text-weight-bold">{{ minorsCount }}</div>
-            <div class="text-caption text-grey-7 q-mt-sm">Registros marcados como menor de 1 año.</div>
+            <div class="text-caption text-grey-7 q-mt-sm">Registros marcados como menor de 1 ano.</div>
           </q-card>
         </div>
       </div>
 
       <div class="row q-col-gutter-lg">
-        <div class="col-12 col-xl-4">
+        <div class="col-12 col-xl-3">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
               <div class="text-subtitle1 text-weight-bold">Por especie</div>
@@ -83,7 +90,7 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-xl-4">
+        <div class="col-12 col-xl-3">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
               <div class="text-subtitle1 text-weight-bold">Por lugar</div>
@@ -103,10 +110,30 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-xl-4">
+        <div class="col-12 col-xl-3">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
-              <div class="text-subtitle1 text-weight-bold">Menor de 1 año</div>
+              <div class="text-subtitle1 text-weight-bold">Por centro de salud</div>
+            </q-card-section>
+            <q-card-section class="q-pt-sm">
+              <q-table
+                :rows="summaryHealthCenterRows"
+                :columns="healthCenterColumns"
+                row-key="nombre"
+                dense
+                flat
+                bordered
+                hide-pagination
+                no-data-label="Sin datos por centro de salud"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <div class="col-12 col-xl-3">
+          <q-card class="app-soft-card app-table">
+            <q-card-section class="q-pb-none">
+              <div class="text-subtitle1 text-weight-bold">Menor de 1 ano</div>
             </q-card-section>
             <q-card-section class="q-pt-sm">
               <q-table
@@ -117,7 +144,7 @@
                 flat
                 bordered
                 hide-pagination
-                no-data-label="Sin datos por condición"
+                no-data-label="Sin datos por condicion"
               />
             </q-card-section>
           </q-card>
@@ -166,6 +193,12 @@
               </q-td>
             </template>
 
+            <template #body-cell-health_center="props">
+              <q-td :props="props">
+                {{ props.row.healthCenter?.nombre || 'SIN CENTRO DE SALUD' }}
+              </q-td>
+            </template>
+
             <template #body-cell-menor="props">
               <q-td :props="props">
                 <q-badge :color="props.row.menor ? 'negative' : 'positive'" rounded>
@@ -201,6 +234,7 @@ export default {
         total: 0,
         especies: [],
         places: [],
+        health_centers: [],
         menor: []
       },
       filters: {
@@ -215,6 +249,10 @@ export default {
         { name: 'nombre', label: 'Lugar', field: 'nombre', align: 'left' },
         { name: 'cantidad', label: 'Cantidad', field: 'cantidad', align: 'right' }
       ],
+      healthCenterColumns: [
+        { name: 'nombre', label: 'Centro de salud', field: 'nombre', align: 'left' },
+        { name: 'cantidad', label: 'Cantidad', field: 'cantidad', align: 'right' }
+      ],
       menorColumns: [
         { name: 'valor', label: 'Menor', field: 'valor', align: 'left' },
         { name: 'cantidad', label: 'Cantidad', field: 'cantidad', align: 'right' }
@@ -225,6 +263,7 @@ export default {
         { name: 'nombre_mascota', label: 'Mascota', field: 'nombre_mascota', align: 'left' },
         { name: 'especie', label: 'Especie', field: row => row.especie?.nombre || row.especie || 'SIN ESPECIE', align: 'left' },
         { name: 'place', label: 'Lugar', field: row => row.place?.nombre || 'SIN LUGAR', align: 'left' },
+        { name: 'health_center', label: 'Centro de salud', field: row => row.healthCenter?.nombre || 'SIN CENTRO DE SALUD', align: 'left' },
         { name: 'menor', label: 'Menor', field: 'menor', align: 'center' }
       ]
     }
@@ -236,17 +275,20 @@ export default {
     summaryPlaceRows () {
       return Array.isArray(this.summary.places) ? this.summary.places : []
     },
+    summaryHealthCenterRows () {
+      return Array.isArray(this.summary.health_centers) ? this.summary.health_centers : []
+    },
     summaryMenorRows () {
       return Array.isArray(this.summary.menor)
         ? this.summary.menor.map(item => ({
             ...item,
-            valor: item.valor === 'SI' ? 'Menor de 1 año' : 'Mayor de 1 año'
+            valor: item.valor === 'SI' ? 'Menor de 1 ano' : 'Mayor de 1 ano'
           }))
         : []
     },
     minorsCount () {
       return this.summaryMenorRows.reduce((total, row) => {
-        return row.valor === 'Menor de 1 año' ? total + Number(row.cantidad || 0) : total
+        return row.valor === 'Menor de 1 ano' ? total + Number(row.cantidad || 0) : total
       }, 0)
     }
   },
@@ -285,6 +327,7 @@ export default {
           total: Number(data?.summary?.total || 0),
           especies: Array.isArray(data?.summary?.especies) ? data.summary.especies : [],
           places: Array.isArray(data?.summary?.places) ? data.summary.places : [],
+          health_centers: Array.isArray(data?.summary?.health_centers) ? data.summary.health_centers : [],
           menor: Array.isArray(data?.summary?.menor) ? data.summary.menor : []
         }
       } catch (error) {
