@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\HealthCenter;
+use App\Models\Place;
 
 class User extends Authenticatable
 {
@@ -28,6 +30,8 @@ class User extends Authenticatable
         'email',
         'password',
         'rol_id',
+        'place_id',
+        'health_center_id',
     ];
 
     /**
@@ -53,6 +57,16 @@ class User extends Authenticatable
     public function rol(): BelongsTo
     {
         return $this->belongsTo(Rol::class, 'rol_id')->with('permisos');
+    }
+
+    public function place(): BelongsTo
+    {
+        return $this->belongsTo(Place::class);
+    }
+
+    public function healthCenter(): BelongsTo
+    {
+        return $this->belongsTo(HealthCenter::class);
     }
 
 

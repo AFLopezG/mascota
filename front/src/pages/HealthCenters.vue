@@ -2,19 +2,19 @@
   <q-page class="app-page">
     <div class="column q-gutter-lg">
       <AppSectionHeader
-        title="Tipos de campania"
-        subtitle="Registro y modificacion del catalogo de tipos de campania."
-        icon="sym_r_campaign"
+        title="Centros de salud"
+        subtitle="Registro y modificacion del catalogo de centros de salud."
+        icon="sym_r_local_hospital"
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Recargar" :loading="loading" @click="loadData" />
-          <q-btn v-if="store.bool_registrar_campania_tipos" color="primary" icon="sym_r_add" label="Nuevo tipo" @click="openCreate" />
+          <q-btn v-if="store.bool_registrar_health_centers" color="primary" icon="sym_r_add" label="Nuevo centro" @click="openCreate" />
         </template>
       </AppSectionHeader>
 
       <q-card class="app-soft-card app-table">
         <q-card-section class="q-pb-none">
-          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar tipo..." />
+          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar centro de salud..." />
         </q-card-section>
 
         <q-card-section class="q-pt-sm">
@@ -29,8 +29,8 @@
           >
             <template #body-cell-actions="props">
               <q-td :props="props">
-                <q-btn v-if="store.bool_modificar_campania_tipos" flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
-                <q-btn v-if="store.bool_eliminar_campania_tipos" flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
+                <q-btn v-if="store.bool_modificar_health_centers" flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
+                <q-btn v-if="store.bool_eliminar_health_centers" flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
               </q-td>
             </template>
           </q-table>
@@ -39,14 +39,16 @@
     </div>
 
     <q-dialog v-model="dialog" persistent>
-      <q-card class="app-soft-card" style="min-width: 420px; width: 100%; max-width: 520px;">
+      <q-card class="app-soft-card" style="min-width: 420px; width: 100%; max-width: 560px;">
         <q-card-section class="bg-primary text-white">
-          <div class="text-h6">{{ form.id ? 'Modificar tipo de campania' : 'Registrar tipo de campania' }}</div>
+          <div class="text-h6">{{ form.id ? 'Modificar centro de salud' : 'Registrar centro de salud' }}</div>
         </q-card-section>
 
         <q-form @submit.prevent="save">
           <q-card-section class="q-gutter-md">
             <q-input v-model="form.nombre" :label="$requiredLabel('Nombre')" outlined dense maxlength="255" />
+            <q-input v-model="form.direccion" label="Direccion" outlined dense maxlength="255" />
+            <q-input v-model="form.telefono" label="Telefono" outlined dense maxlength="255" />
           </q-card-section>
 
           <q-card-actions align="right">
@@ -65,11 +67,13 @@ import { globalStore } from 'src/stores/globalStore'
 
 const emptyForm = () => ({
   id: null,
-  nombre: ''
+  nombre: '',
+  direccion: '',
+  telefono: ''
 })
 
 export default {
-  name: 'CampaniaTiposPage',
+  name: 'HealthCentersPage',
   components: {
     AppSectionHeader
   },
@@ -84,6 +88,8 @@ export default {
       form: emptyForm(),
       columns: [
         { name: 'nombre', label: 'Nombre', field: 'nombre', align: 'left', sortable: true },
+        { name: 'direccion', label: 'Direccion', field: 'direccion', align: 'left', sortable: true },
+        { name: 'telefono', label: 'Telefono', field: 'telefono', align: 'left', sortable: true },
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ]
     }
@@ -95,11 +101,20 @@ export default {
         return this.rows
       }
 
-      return this.rows.filter(row => String(row.nombre || '').toLowerCase().includes(term))
+      return this.rows.filter(row => [
+        row.nombre,
+        row.direccion,
+        row.telefono
+      ].some(value => String(value || '').toLowerCase().includes(term)))
     }
   },
   created () {
-    if (!this.store.bool_campania_tipos) {
+    if (!this.store.isLoggedIn) {
+      this.$router.push('/')
+      return
+    }
+
+    if (!this.store.bool_health_centers) {
       this.$router.push('/home')
       return
     }
@@ -110,10 +125,10 @@ export default {
     async loadData () {
       this.loading = true
       try {
-        const { data } = await this.$api.get('campania-tipo')
+        const { data } = await this.$api.get('health-center')
         this.rows = Array.isArray(data) ? data : []
       } catch (error) {
-        this.notifyError(error, 'No se pudieron cargar los tipos de campania.')
+        this.notifyError(error, 'No se pudieron cargar los centros de salud.')
       } finally {
         this.loading = false
       }
@@ -125,18 +140,24 @@ export default {
     openEdit (row) {
       this.form = {
         id: row.id,
-        nombre: row.nombre || ''
+        nombre: row.nombre || '',
+        direccion: row.direccion || '',
+        telefono: row.telefono || ''
       }
       this.dialog = true
     },
     async save () {
       this.saving = true
       try {
-        const payload = { nombre: this.form.nombre }
+        const payload = {
+          nombre: this.form.nombre,
+          direccion: this.form.direccion || null,
+          telefono: this.form.telefono || null
+        }
 
         const { data } = this.form.id
-          ? await this.$api.put(`campania-tipo/${this.form.id}`, payload)
-          : await this.$api.post('campania-tipo', payload)
+          ? await this.$api.put(`health-center/${this.form.id}`, payload)
+          : await this.$api.post('health-center', payload)
 
         this.$q.notify({
           message: data.message || 'Guardado correctamente.',
@@ -147,14 +168,14 @@ export default {
         this.dialog = false
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo guardar el tipo de campania.')
+        this.notifyError(error, 'No se pudo guardar el centro de salud.')
       } finally {
         this.saving = false
       }
     },
     confirmDelete (row) {
       this.$q.dialog({
-        title: 'Eliminar tipo de campania',
+        title: 'Eliminar centro de salud',
         message: `Desea eliminar "${row.nombre}"?`,
         cancel: true,
         persistent: true
@@ -162,16 +183,16 @@ export default {
     },
     async remove (row) {
       try {
-        const { data } = await this.$api.delete(`campania-tipo/${row.id}`)
+        const { data } = await this.$api.delete(`health-center/${row.id}`)
         this.$q.notify({
-          message: data.message || 'Tipo de campania eliminado.',
+          message: data.message || 'Centro de salud eliminado.',
           color: 'positive',
           position: 'top',
           timeout: 2000
         })
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo eliminar el tipo de campania.')
+        this.notifyError(error, 'No se pudo eliminar el centro de salud.')
       }
     },
     notifyError (error, fallback) {

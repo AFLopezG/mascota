@@ -61,9 +61,15 @@
 
             <template #body-cell-foto="props">
               <q-td :props="props">
-                <q-avatar v-if="props.row.foto_url" rounded size="48px">
-                  <img :src="props.row.foto_url" alt="Fotografia" />
-                </q-avatar>
+                <q-btn
+                  v-if="props.row.foto"
+                  outline
+                  color="primary"
+                  dense
+                  icon="sym_r_image"
+                  label="Ver foto"
+                  @click="openFotoDialog(props.row)"
+                />
                 <span v-else class="text-grey-7">Sin foto</span>
               </q-td>
             </template>
@@ -93,6 +99,30 @@
       </q-card>
     </div>
 
+    <q-dialog v-model="fotoDialog" persistent @hide="closeFotoDialog">
+      <q-card class="app-soft-card foto-dialog-card">
+        <q-card-section class="bg-primary text-white row items-center justify-between">
+          <div>
+            <div class="text-h6">Foto del registro</div>
+            <div class="text-caption text-white-7">{{ fotoDialogTitle }}</div>
+          </div>
+          <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="foto-dialog-card__body">
+          <div v-if="fotoDialogLoading" class="row justify-center q-pa-xl">
+            <q-spinner color="primary" size="42px" />
+          </div>
+          <div v-else-if="fotoDialogSrc" class="foto-dialog-card__image-wrap">
+            <img :src="fotoDialogSrc" alt="Foto del registro" class="foto-dialog-card__image" />
+          </div>
+          <q-banner v-else rounded class="bg-grey-2 text-grey-9">
+            No se pudo cargar la foto.
+          </q-banner>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="dialog" persistent full-width @hide="closeDialog">
       <q-card class="app-soft-card dialog-card-vacuna">
         <q-card-section class="bg-primary text-white row items-center justify-between">
@@ -114,35 +144,18 @@
                   option-value="value"
                   emit-value
                   map-options
-                  label="Campaña"
+                  :label="$requiredLabel('Campaña')"
                   outlined
                   dense
                   :rules="[val => !!val || 'Seleccione una campaña vigente']"
                 />
               </div>
-              <div class="col-12 col-md-4">
-                <q-select
-                  v-model="form.place_id"
-                  :options="placeOptions"
-                  option-label="label"
-                  option-value="value"
-                  emit-value
-                  map-options
-                  label="Lugar"
-                  outlined
-                  dense
-                  :rules="[val => !!val || 'Seleccione un lugar']"
-                />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-input v-model="form.fecha_vacuna" type="datetime-local" label="Fecha vacuna" outlined dense />
-              </div>
 
               <div class="col-12 col-md-4">
-                <q-input v-model="form.cedula" label="Cedula" outlined dense />
+                <q-input v-model="form.cedula" label="Carnet de Identidad" outlined dense />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="form.nombre" label="Nombre" outlined dense />
+                <q-input v-model="form.nombre" label="Nombre Responsable" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="form.celular" label="Celular" outlined dense />
@@ -162,7 +175,7 @@
                   option-value="value"
                   emit-value
                   map-options
-                  label="Especie"
+                  :label="$requiredLabel('Especie')"
                   outlined
                   dense
                   :rules="[val => !!val || 'Seleccione una especie']"
@@ -188,12 +201,15 @@
                   @update:model-value="syncRaza"
                 />
               </div>
-              <div class="col-12 col-md-4">
-                <q-input v-model="form.raza" label="Raza textual" outlined dense />
-              </div>
 
-              <div class="col-12 col-md-4">
-                <q-checkbox v-model="form.menor" label="Menor de 1 año" />
+              <div class="col-12 col-md-6">
+                <q-option-group
+                  v-model="form.menor"
+                  :options="menorOptions"
+                  type="radio"
+                  inline
+                  :label="$requiredLabel('Edad')"
+                />
               </div>
             </div>
 
@@ -224,7 +240,7 @@
                 <div class="col-12 col-md-5 q-gutter-md">
                   <q-file
                     v-model="form.foto_file"
-                    label="Seleccionar foto"
+                    label="Seleccionar foto (opcional)"
                     outlined
                     dense
                     accept="image/*"
@@ -264,11 +280,13 @@ const defaultForm = (defaultCampaniaId = null, defaultPlaceId = null) => ({
   especie: '',
   raza: '',
   menor: false,
-  fecha_vacuna: moment().format('YYYY-MM-DDTHH:mm'),
+  fecha_vacuna: moment().format('YYYY-MM-DD HH:mm'),
   campania_id: defaultCampaniaId,
   especie_id: null,
   raza_id: null,
   place_id: defaultPlaceId,
+  lat: null,
+  lng: null,
   foto_file: null,
   foto_preview_url: ''
 })
@@ -283,6 +301,10 @@ export default {
       saving: false,
       rows: [],
       dialog: false,
+      fotoDialog: false,
+      fotoDialogLoading: false,
+      fotoDialogTitle: '',
+      fotoDialogSrc: '',
       cameraActive: false,
       cameraError: '',
       mediaStream: null,
@@ -295,6 +317,10 @@ export default {
       especies: [],
       razas: [],
       razaFilter: '',
+      menorOptions: [
+        { label: 'Mayor de 1 año', value: false },
+        { label: 'Menor de 1 año', value: true }
+      ],
       form: defaultForm(),
       columns: [
         { name: 'fecha_vacuna', label: 'Fecha', field: 'fecha_vacuna', align: 'left', sortable: true },
@@ -339,10 +365,9 @@ export default {
           return [raza.nombre, raza.especie?.nombre].some(value => String(value || '').toLowerCase().includes(filter))
         })
         .map(raza => ({
-          label: `${raza.nombre}${raza.especie?.nombre ? ` - ${raza.especie.nombre}` : ''}`,
+          label: `${raza.nombre}`,
           value: raza.id
-        }))
-    }
+        }))    }
   },
   created () {
     if (!this.store.isLoggedIn) {
@@ -398,6 +423,36 @@ export default {
         this.loading = false
       }
     },
+    async openFotoDialog (row) {
+      if (!row?.foto) {
+        this.notifySimple('Este registro no tiene foto.')
+        return
+      }
+
+      this.fotoDialogTitle = `${row.nombre_mascota || 'Registro'} - ${row.cedula || 'Sin cédula'}`
+      this.fotoDialogSrc = ''
+      this.fotoDialogLoading = true
+      this.fotoDialog = true
+
+      try {
+        const { data } = await this.$api.get(`registro-vacuna/${row.id}/foto`)
+        this.fotoDialogSrc = data?.data?.foto_base64 || ''
+        if (!this.fotoDialogSrc) {
+          this.notifySimple('La foto no está disponible.')
+        }
+      } catch (error) {
+        this.fotoDialogSrc = ''
+        this.notifyError(error, 'No se pudo cargar la foto del registro.')
+      } finally {
+        this.fotoDialogLoading = false
+      }
+    },
+    closeFotoDialog () {
+      this.fotoDialog = false
+      this.fotoDialogLoading = false
+      this.fotoDialogTitle = ''
+      this.fotoDialogSrc = ''
+    },
     clearFilters () {
       this.filters = {
         fecha_desde: moment().startOf('month').format('YYYY-MM-DD'),
@@ -411,6 +466,7 @@ export default {
       this.form = defaultForm(defaultCampaniaId, defaultPlaceId)
       this.cameraError = ''
       this.dialog = true
+      this.loadCurrentLocation()
       this.$nextTick(() => {
         this.startCamera()
       })
@@ -421,6 +477,27 @@ export default {
         URL.revokeObjectURL(this.form.foto_preview_url)
       }
       this.form = defaultForm(this.campanias[0]?.id ?? null, this.places[0]?.id ?? null)
+    },
+    async loadCurrentLocation () {
+      if (!navigator.geolocation) {
+        return
+      }
+
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0
+          })
+        })
+
+        this.form.lat = String(position.coords.latitude)
+        this.form.lng = String(position.coords.longitude)
+      } catch (error) {
+        this.form.lat = null
+        this.form.lng = null
+      }
     },
     async startCamera () {
       this.cameraError = ''
@@ -548,13 +625,9 @@ export default {
         return
       }
 
-      if (!this.form.foto_file) {
-        this.notifySimple('Seleccione o capture una fotografia.')
-        return
-      }
-
       this.saving = true
       try {
+        await this.loadCurrentLocation()
         const payload = new FormData()
         payload.append('cedula', this.form.cedula || '')
         payload.append('nombre', this.form.nombre || '')
@@ -562,14 +635,16 @@ export default {
         payload.append('celular', this.form.celular || '')
         payload.append('nombre_mascota', this.form.nombre_mascota || '')
         payload.append('especie', this.form.especie || '')
-        payload.append('raza', this.form.raza || '')
         payload.append('menor', this.form.menor ? '1' : '0')
         payload.append('fecha_vacuna', this.form.fecha_vacuna || '')
         payload.append('campania_id', this.form.campania_id ?? '')
         payload.append('especie_id', this.form.especie_id ?? '')
         payload.append('raza_id', this.form.raza_id ?? '')
-        payload.append('place_id', this.form.place_id ?? '')
-        payload.append('foto', this.form.foto_file)
+        payload.append('lat', this.form.lat ?? '')
+        payload.append('lng', this.form.lng ?? '')
+        if (this.form.foto_file) {
+          payload.append('foto', this.form.foto_file)
+        }
 
         const { data } = await this.$api.post('registro-vacuna', payload, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -649,6 +724,31 @@ export default {
   max-width: 1280px;
 }
 
+.foto-dialog-card {
+  width: 92vw;
+  max-width: 920px;
+}
+
+.foto-dialog-card__body {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.foto-dialog-card__image-wrap {
+  width: 100%;
+}
+
+.foto-dialog-card__image {
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  display: block;
+  border-radius: 14px;
+  background: #0f172a;
+}
+
 .camera-frame {
   min-height: 320px;
   border-radius: 18px;
@@ -680,6 +780,11 @@ export default {
 
 @media (max-width: 599px) {
   .dialog-card-vacuna {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .foto-dialog-card {
     width: 100vw;
     max-width: 100vw;
   }

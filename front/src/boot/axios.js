@@ -11,6 +11,14 @@ export default boot(({ app,router }) => {
   app.config.globalProperties.$url = import.meta.env.VITE_API
   app.config.globalProperties.$axios = axios
   app.config.globalProperties.$api = api
+  app.config.globalProperties.$requiredLabel = (label) => {
+    const text = String(label || '').trim()
+    if (!text) {
+      return ''
+    }
+
+    return text.endsWith('*') ? text : `${text} *`
+  }
   // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
   //       so you can easily perform requests against your app's API
   const store = globalStore();
@@ -55,6 +63,10 @@ export default boot(({ app,router }) => {
     store.bool_registrar_places = false,
     store.bool_modificar_places = false,
     store.bool_eliminar_places = false,
+    store.bool_health_centers = false,
+    store.bool_registrar_health_centers = false,
+    store.bool_modificar_health_centers = false,
+    store.bool_eliminar_health_centers = false,
     store.bool_registro_vacunas = false,
     store.bool_registrar_registro_vacuna = false
   }
@@ -104,6 +116,10 @@ export default boot(({ app,router }) => {
       if(r.id===39) store.bool_eliminar_places = true
       if(r.id===40) store.bool_registro_vacunas = true
       if(r.id===41) store.bool_registrar_registro_vacuna = true
+      if(r.id===42) store.bool_health_centers = true
+      if(r.id===43) store.bool_registrar_health_centers = true
+      if(r.id===44) store.bool_modificar_health_centers = true
+      if(r.id===45) store.bool_eliminar_health_centers = true
 
 
     });

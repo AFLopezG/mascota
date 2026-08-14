@@ -175,7 +175,7 @@
           <q-form class="q-gutter-md" @submit.prevent="guardarVacuna">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-4">
-                <q-input v-model="vacunaForm.fecha" type="date" label="Fecha" outlined dense />
+                <q-input v-model="vacunaForm.fecha" type="date" :label="$requiredLabel('Fecha')" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="vacunaForm.fecha_prox" type="date" label="Fecha prox" outlined dense hint="Opcional" />
@@ -188,7 +188,7 @@
                   option-value="value"
                   emit-value
                   map-options
-                  label="Campania de vacunacion"
+                  :label="$requiredLabel('Campania de vacunacion')"
                   outlined
                   dense
                   clearable
@@ -196,10 +196,10 @@
                 />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="vacunaForm.tipo" label="Tipo" outlined dense />
+                <q-input v-model="vacunaForm.tipo" :label="$requiredLabel('Tipo')" outlined dense />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="vacunaForm.lugar" label="Lugar" outlined dense />
+                <q-input v-model="vacunaForm.lugar" :label="$requiredLabel('Lugar')" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="vacunaForm.num_lote" label="Numero de lote" outlined dense hint="Opcional" />
@@ -286,7 +286,7 @@ export default {
         this.campaniaOptions = []
         this.$q.notify({
           color: 'negative',
-          message: error?.response?.data?.message || 'No se pudieron cargar las campanas vigentes'
+          message: error?.response?.data?.message || 'No se pudieron cargar las campañas vigentes'
         })
       }
     },

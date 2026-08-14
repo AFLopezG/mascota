@@ -97,7 +97,7 @@
 
         <q-form class="q-gutter-md" @submit.prevent="enviarRol">
           <q-card-section class="q-pa-lg">
-            <q-input v-model="rol.nombre" outlined dense label="Nombre" :rules="[val => !!val || 'Ingresa un nombre']" />
+            <q-input v-model="rol.nombre" outlined dense :label="$requiredLabel('Nombre')" :rules="[val => !!val || 'Ingresa un nombre']" />
           </q-card-section>
 
           <q-card-actions align="right" class="q-px-lg q-pb-lg">

@@ -23,7 +23,11 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->unsignedBigInteger('rol_id');
-            $table->foreign('rol_id')->references('id')->on('rols'); 
+            $table->foreign('rol_id')->references('id')->on('rols');
+            $table->unsignedBigInteger('health_center_id')->nullable();
+            $table->foreign('health_center_id')->references('id')->on('health_centers'); 
+            $table->unsignedBigInteger('place_id')->nullable();
+            $table->foreign('place_id')->references('id')->on('places');   
             $table->rememberToken();
             $table->timestamps();
         });

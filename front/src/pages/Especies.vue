@@ -46,8 +46,8 @@
 
         <q-form @submit.prevent="save">
           <q-card-section class="q-gutter-md">
-            <q-input v-model="form.codigo" label="Codigo" outlined dense maxlength="50" />
-            <q-input v-model="form.nombre" label="Nombre" outlined dense maxlength="255" />
+            <q-input v-model="form.codigo" :label="$requiredLabel('Codigo')" outlined dense maxlength="50" />
+            <q-input v-model="form.nombre" :label="$requiredLabel('Nombre')" outlined dense maxlength="255" />
           </q-card-section>
 
           <q-card-actions align="right">

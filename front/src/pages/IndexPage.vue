@@ -120,7 +120,7 @@
           <q-card class="app-soft-card app-calendar-card">
             <q-card-section class="row items-center justify-between q-gutter-sm">
               <div>
-                <div class="text-subtitle1 text-weight-bold">Calendario de campanas</div>
+                <div class="text-subtitle1 text-weight-bold">Calendario de campañas</div>
                 <div class="text-caption text-grey-7">
                   Marca fechas de inicio y cierre para visualizar la programacion.
                 </div>
@@ -169,7 +169,7 @@
                     </q-card>
                   </div>
                   <q-banner v-else rounded class="bg-blue-1 text-blue-10">
-                    No hay campanas programadas para esta fecha.
+                    No hay campañas programadas para esta fecha.
                   </q-banner>
                 </div>
               </div>
@@ -181,7 +181,7 @@
           <q-card class="app-soft-card">
             <q-card-section class="row items-center justify-between">
               <div>
-                <div class="text-subtitle1 text-weight-bold">Estado de campanas</div>
+                <div class="text-subtitle1 text-weight-bold">Estado de campañas</div>
                 <div class="text-caption text-grey-7">Distribucion actual del servicio.</div>
               </div>
               <q-icon name="sym_r_query_stats" color="primary" size="28px" />
@@ -227,7 +227,7 @@
                   </q-avatar>
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>Gestionar campanas</q-item-label>
+                  <q-item-label>Gestionar campañas</q-item-label>
                   <q-item-label caption>Programacion y anulacion</q-item-label>
                 </q-item-section>
               </q-item>

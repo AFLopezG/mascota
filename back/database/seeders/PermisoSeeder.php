@@ -54,6 +54,10 @@ class PermisoSeeder extends Seeder
             ['id' => 39, 'nombre' => 'Eliminar Lugares', 'permiso_id' => 36],
             ['id' => 40, 'nombre' => 'Ver Registro Vacunas', 'permiso_id' => null],
             ['id' => 41, 'nombre' => 'Registrar Registro Vacunas', 'permiso_id' => 40],
+            ['id' => 42, 'nombre' => 'Ver Centros de Salud', 'permiso_id' => null],
+            ['id' => 43, 'nombre' => 'Registrar Centros de Salud', 'permiso_id' => 42],
+            ['id' => 44, 'nombre' => 'Modificar Centros de Salud', 'permiso_id' => 42],
+            ['id' => 45, 'nombre' => 'Eliminar Centros de Salud', 'permiso_id' => 42],
         ]);
     }
 }

@@ -14,7 +14,7 @@ class UserController extends Controller
     public function index()
     {
         //
-        return User::with('rol')->get();
+        return User::with(['rol', 'place', 'healthCenter'])->get();
     }
 
     /**
@@ -31,11 +31,15 @@ class UserController extends Controller
             'password' => 'required',
             'fecha_limite' => 'required',
             'rol_id' => 'required',
+            'place_id' => 'nullable|integer|exists:places,id',
+            'health_center_id' => 'nullable|integer|exists:health_centers,id',
         ]);
 
         $validated['password']=Hash::make($validated['password']);
         $validated['nombre']= strtoupper($request->nombre);
         $validated['cedula']= strtoupper($request->cedula);
+        $validated['place_id'] = $validated['place_id'] ?? null;
+        $validated['health_center_id'] = $validated['health_center_id'] ?? null;
         $user = User::create($validated);
 
         return($user);
@@ -64,6 +68,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,'.$request->id,
             'fecha_limite' => 'required',
             'rol_id' => 'required',
+            'place_id' => 'nullable|integer|exists:places,id',
+            'health_center_id' => 'nullable|integer|exists:health_centers,id',
         ]);
         
         $user = User::find($request->id);
@@ -74,6 +80,8 @@ class UserController extends Controller
         $user->email = $request->email;
         $user->fecha_limite = $request->fecha_limite;
         $user->rol_id = $request->rol_id;
+        $user->place_id = $validated['place_id'] ?? null;
+        $user->health_center_id = $validated['health_center_id'] ?? null;
         $user->save();
     }
 

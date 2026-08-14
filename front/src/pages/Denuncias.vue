@@ -232,12 +232,12 @@
           <q-form class="q-gutter-lg" @submit.prevent="save">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-4">
-                <q-input v-model="form.fec_denuncia" type="datetime-local" label="Fecha y hora" outlined dense />
+                <q-input v-model="form.fec_denuncia" type="datetime-local" :label="$requiredLabel('Fecha y hora')" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input
                   v-model="form.persona_cinit"
-                  label="Cedula"
+                  :label="$requiredLabel('Cedula')"
                   outlined
                   dense
                   :loading="buscandoPersona"
@@ -256,7 +256,7 @@
                 />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="form.persona_nombre" label="Nombre" outlined dense />
+                <q-input v-model="form.persona_nombre" :label="$requiredLabel('Nombre')" outlined dense />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="form.persona_paterno" label="Paterno" outlined dense />
@@ -311,7 +311,7 @@
                   option-value="value"
                   emit-value
                   map-options
-                  label="Especie"
+                  :label="$requiredLabel('Especie')"
                   outlined
                   dense
                   :disable="!!form.mascota_id"
@@ -329,7 +329,7 @@
                   map-options
                   use-input
                   input-debounce="0"
-                  label="Raza"
+                  :label="$requiredLabel('Raza')"
                   outlined
                   dense
                   :disable="!!form.mascota_id || !form.especie_id"
@@ -375,7 +375,7 @@
                   map-options
                   multiple
                   use-chips
-                  label="Tipos de denuncia"
+                  :label="$requiredLabel('Tipos de denuncia')"
                   outlined
                   dense
                   hint="Selecciona uno o varios tipos."

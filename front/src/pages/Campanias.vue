@@ -89,16 +89,16 @@
           <q-card-section class="q-gutter-md">
             <div class="row q-col-gutter-md">
               <div class="col-12">
-                <q-input v-model="form.nombre" label="Nombre" outlined dense maxlength="255" :disable="lockedForm" />
+                <q-input v-model="form.nombre" :label="$requiredLabel('Nombre')" outlined dense maxlength="255" :disable="lockedForm" />
               </div>
               <div class="col-12 col-md-6">
-                <q-input v-model="form.fec_ini" label="Fecha inicio" type="date" outlined dense :disable="lockedForm" />
+                <q-input v-model="form.fec_ini" :label="$requiredLabel('Fecha inicio')" type="date" outlined dense :disable="lockedForm" />
               </div>
               <div class="col-12 col-md-6">
-                <q-input v-model="form.fec_fin" label="Fecha fin" type="date" outlined dense :disable="lockedForm" />
+                <q-input v-model="form.fec_fin" :label="$requiredLabel('Fecha fin')" type="date" outlined dense :disable="lockedForm" />
               </div>
               <div class="col-12">
-                <q-input v-model="form.lugar" label="Lugar" outlined dense maxlength="255" :disable="lockedForm" />
+                <q-input v-model="form.lugar" :label="$requiredLabel('Lugar')" outlined dense maxlength="255" :disable="lockedForm" />
               </div>
               <div class="col-12">
                 <q-select
@@ -108,7 +108,7 @@
                   option-value="id"
                   emit-value
                   map-options
-                  label="Tipo de campania"
+                  :label="$requiredLabel('Tipo de campania')"
                   outlined
                   dense
                   :disable="lockedForm"

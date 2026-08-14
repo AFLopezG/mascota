@@ -6,6 +6,7 @@ use App\Http\Controllers\EspecieController;
 use App\Http\Controllers\PermisoController;
 use App\Http\Controllers\MascotaController;
 use App\Http\Controllers\PersonaController;
+use App\Http\Controllers\HealthCenterController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\RazaController;
@@ -60,6 +61,9 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::resource('/permiso',\App\Http\Controllers\PermisoController::class);
     Route::resource('/persona', PersonaController::class);
     Route::resource('/place', PlaceController::class);
+    Route::resource('/health-center', HealthCenterController::class);
+    Route::get('/registro-vacuna/reporte', [RegistroVacunaController::class, 'reporte']);
+    Route::get('/registro-vacuna/{registroVacuna}/foto', [RegistroVacunaController::class, 'foto'])->whereNumber('registroVacuna');
     Route::resource('/registro-vacuna', RegistroVacunaController::class);
     Route::put('/registro-vacuna/{registroVacuna}/anular', [RegistroVacunaController::class, 'anular']);
     Route::post('/mascota/{mascota}/foto', [MascotaController::class, 'updateFoto']);

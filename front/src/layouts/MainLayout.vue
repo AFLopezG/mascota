@@ -115,6 +115,15 @@
                 <q-item-label caption>Alta y listado por fechas</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item v-if="store.bool_registro_vacunas" clickable v-ripple to="/reporte-registro-vacunas" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_assessment" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Reporte vacunas</q-item-label>
+                <q-item-label caption>Especie, lugar y menores</q-item-label>
+              </q-item-section>
+            </q-item>
             <q-item v-if="store.bool_denuncia" clickable v-ripple to="/denuncias" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_report" />
@@ -140,6 +149,14 @@
               <q-item-section>
                 <q-item-label>Tipos de denuncia</q-item-label>
                 <q-item-label caption>Catalogo de denuncias</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_health_centers" clickable v-ripple to="/health-centers" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_local_hospital" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Centros de salud</q-item-label>
+                <q-item-label caption>CatÃ¡logo sanitario</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -255,7 +272,8 @@ const hasCatalogAccess = computed(() => (
   store.bool_categorias ||
   store.bool_campania_tipos ||
   store.bool_campanias ||
-  store.bool_places
+  store.bool_places ||
+  store.bool_health_centers
 ))
 
 const hasGeneralAccess = computed(() => (

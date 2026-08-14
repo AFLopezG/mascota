@@ -121,26 +121,26 @@
           <q-form @submit.prevent="onSubmit" @reset="onReset" class="q-gutter-md">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="dato.cedula" label="Numero carnet" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.cedula" :label="$requiredLabel('Numero carnet')" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="dato.name" label="Cuenta" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.name" :label="$requiredLabel('Cuenta')" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div class="col-12">
-                <q-input outlined dense v-model="dato.nombre" label="Nombre completo" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.nombre" :label="$requiredLabel('Nombre completo')" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="dato.celular" label="Celular" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.celular" :label="$requiredLabel('Celular')" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="dato.email" label="Correo" type="email" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.email" :label="$requiredLabel('Correo')" type="email" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div v-if="dato.id == undefined" class="col-12 col-md-6">
                 <q-input
                   outlined
                   dense
                   v-model="dato.password"
-                  label="Contraseña"
+                  :label="$requiredLabel('Contraseña')"
                   lazy-rules
                   :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']"
                   :type="typePassword ? 'password' : 'text'"
@@ -151,10 +151,38 @@
                 </q-input>
               </div>
               <div class="col-12 col-md-6">
-                <q-input outlined dense v-model="dato.fecha_limite" type="date" label="Fecha limite" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
+                <q-input outlined dense v-model="dato.fecha_limite" type="date" :label="$requiredLabel('Fecha limite')" lazy-rules :rules="[(val) => val.length > 0 || 'Por favor ingresa datos']" />
               </div>
               <div class="col-12 col-md-6">
-                <q-select outlined dense v-model="rol" label="Rol" :options="roles" option-label="nombre" />
+                <q-select outlined dense v-model="rol" :label="$requiredLabel('Rol')" :options="roles" option-label="nombre" />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  outlined
+                  dense
+                  v-model="dato.place_id"
+                  :label="$requiredLabel('Lugar')"
+                  :options="placeOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  clearable
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  outlined
+                  dense
+                  v-model="dato.health_center_id"
+                  :label="$requiredLabel('Centro de salud')"
+                  :options="healthCenterOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  clearable
+                />
               </div>
             </div>
           </q-form>
@@ -211,7 +239,11 @@ export default {
       typePassword: true,
       fecha: moment().format('YYYY-MM-DD'),
       filter: '',
-      dato: { fecha_limite: moment().add(11, 'months').format('YYYY-MM-DD') },
+      dato: {
+        fecha_limite: moment().add(11, 'months').format('YYYY-MM-DD'),
+        place_id: null,
+        health_center_id: null
+      },
       model: '',
       dato2: {},
       options: [],
@@ -229,6 +261,8 @@ export default {
       ],
       data: [],
       roles: [],
+      places: [],
+      healthCenters: [],
       rol: { nombre: '' }
     }
   },
@@ -256,6 +290,18 @@ export default {
     },
     blockedUsers () {
       return this.data.filter(user => user.estado !== 'ACTIVO').length
+    },
+    placeOptions () {
+      return this.places.map(place => ({
+        label: place.nombre,
+        value: place.id
+      }))
+    },
+    healthCenterOptions () {
+      return this.healthCenters.map(healthCenter => ({
+        label: healthCenter.nombre,
+        value: healthCenter.id
+      }))
     }
   },
 
@@ -266,7 +312,7 @@ export default {
     }
 
     this.misdatos()
-    this.getRoles()
+    this.loadCatalogs()
   },
 
   methods: {
@@ -293,10 +339,24 @@ export default {
           })
         })
     },
-    getRoles () {
-      this.$api.get('rol').then((res) => {
-        this.roles = res.data
-      })
+    async loadCatalogs () {
+      try {
+        const [rolesRes, placesRes, healthCentersRes] = await Promise.all([
+          this.$api.get('rol'),
+          this.$api.get('place'),
+          this.$api.get('health-center')
+        ])
+
+        this.roles = Array.isArray(rolesRes.data) ? rolesRes.data : []
+        this.places = Array.isArray(placesRes.data) ? placesRes.data : []
+        this.healthCenters = Array.isArray(healthCentersRes.data) ? healthCentersRes.data : []
+      } catch (err) {
+        this.$q.notify({
+          message: err.response?.data?.message || 'No se pudieron cargar los catalogos.',
+          icon: 'sym_r_close',
+          color: 'negative'
+        })
+      }
     },
     updatepermisos () {
       this.$api.put('updatepermisos/' + this.dato.id, { permisos: this.permisos }).then(() => {
@@ -311,7 +371,12 @@ export default {
       })
     },
     regDialog () {
-      this.dato = { fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD') }
+      this.dato = {
+        fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD'),
+        place_id: null,
+        health_center_id: null,
+        password: ''
+      }
       this.rol = { nombre: '' }
       this.alert = true
     },
@@ -324,7 +389,11 @@ export default {
       })
     },
     editRow (item) {
-      this.dato = item.row
+      this.dato = {
+        ...item.row,
+        place_id: item.row.place_id ?? item.row.place?.id ?? null,
+        health_center_id: item.row.health_center_id ?? item.row.healthCenter?.id ?? null
+      }
       this.rol = this.roles.find(role => Number(role.id) === Number(this.dato.rol_id || this.dato.rol?.id)) || this.dato.rol || { nombre: '' }
       if (this.dato.conjunto) {
         this.conjunto = this.dato.conjunto
@@ -349,6 +418,8 @@ export default {
       }
 
       this.dato.rol_id = this.rol.id
+      this.dato.place_id = this.dato.place_id ?? null
+      this.dato.health_center_id = this.dato.health_center_id ?? null
 
       if (this.dato.id == undefined) {
         this.$api.post('user', this.dato).then(() => {
@@ -358,7 +429,12 @@ export default {
             icon: 'sym_r_check_circle',
             message: 'Creado correctamente'
           })
-          this.dato = { fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD') }
+          this.dato = {
+            fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD'),
+            place_id: null,
+            health_center_id: null,
+            password: ''
+          }
           this.rol = { nombre: '' }
           this.alert = false
           this.misdatos()
@@ -368,6 +444,7 @@ export default {
             icon: 'sym_r_close',
             color: 'negative'
           })
+        }).finally(() => {
           this.$q.loading.hide()
         })
       } else {
@@ -378,7 +455,12 @@ export default {
             icon: 'sym_r_check_circle',
             message: 'Modificado correctamente'
           })
-          this.dato = { fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD') }
+          this.dato = {
+            fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD'),
+            place_id: null,
+            health_center_id: null,
+            password: ''
+          }
           this.rol = { nombre: '' }
           this.alert = false
           this.misdatos()
@@ -388,6 +470,7 @@ export default {
             icon: 'sym_r_close',
             color: 'negative'
           })
+        }).finally(() => {
           this.$q.loading.hide()
         })
       }
@@ -414,9 +497,13 @@ export default {
         })
     },
     onReset () {
-      this.dato.nombre = null
-      this.dato.inicio = 0
-      this.dato.fin = 0
+      this.dato = {
+        fecha_limite: moment().add(12, 'months').format('YYYY-MM-DD'),
+        place_id: null,
+        health_center_id: null,
+        password: ''
+      }
+      this.rol = { nombre: '' }
     },
     cambiopass (i) {
       this.$q.dialog({

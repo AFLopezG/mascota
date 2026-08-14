@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Campania;
 use App\Models\Especie;
+use App\Models\HealthCenter;
 use App\Models\Place;
 use App\Models\Raza;
 use App\Models\User;
@@ -23,15 +24,17 @@ class RegistroVacuna extends Model
         'domicilio',
         'celular',
         'nombre_mascota',
-        'especie',
         'raza',
         'menor',
         'foto',
+        'lat',
+        'lng',
         'fecha_vacuna',
         'campania_id',
         'especie_id',
         'raza_id',
         'place_id',
+        'health_center_id',
         'user_id',
     ];
 
@@ -62,6 +65,11 @@ class RegistroVacuna extends Model
     public function place(): BelongsTo
     {
         return $this->belongsTo(Place::class);
+    }
+
+    public function healthCenter(): BelongsTo
+    {
+        return $this->belongsTo(HealthCenter::class);
     }
 
     public function user(): BelongsTo

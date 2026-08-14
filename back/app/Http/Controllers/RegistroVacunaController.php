@@ -17,7 +17,7 @@ class RegistroVacunaController extends Controller
     {
         $this->ensureCanView($request);
 
-        $query = RegistroVacuna::query()->with(['campania', 'place', 'especie', 'raza', 'user']);
+        $query = RegistroVacuna::query()->with(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user']);
 
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha_vacuna', '>=', $request->input('fecha_desde'));
@@ -27,8 +27,76 @@ class RegistroVacunaController extends Controller
             $query->whereDate('fecha_vacuna', '<=', $request->input('fecha_hasta'));
         }
 
+        $query->where('user_id', Auth::id());
+
         return response()->json([
             'data' => $query->orderByDesc('fecha_vacuna')->orderByDesc('id')->get(),
+        ]);
+    }
+
+    public function reporte(Request $request): JsonResponse
+    {
+        $this->ensureCanView($request);
+
+        $data = $request->validate([
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date'],
+        ]);
+
+        $baseQuery = RegistroVacuna::query()
+            ->with(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user'])
+            ->when(!empty($data['fecha_desde']), function ($query) use ($data) {
+                $query->whereDate('fecha_vacuna', '>=', $data['fecha_desde']);
+            })
+            ->when(!empty($data['fecha_hasta']), function ($query) use ($data) {
+                $query->whereDate('fecha_vacuna', '<=', $data['fecha_hasta']);
+            })
+            ->where('user_id', Auth::id());
+
+        $rows = $baseQuery
+            ->orderByDesc('fecha_vacuna')
+            ->orderByDesc('id')
+            ->get();
+        error_log($rows);
+        $resumenEspecies = $rows
+            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->especie) ? $registro->especie->nombre : (string)($registro->especie ?: 'SIN ESPECIE'))
+            ->map(function ($items, string $nombre) {
+                return [
+                    'nombre' => $nombre,
+                    'cantidad' => $items->count(),
+                ];
+            })
+            ->values();
+
+        $resumenPlaces = $rows
+            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->place) ? $registro->place->nombre : (string)($registro->place ?: 'SIN LUGAR'))
+            ->map(function ($items, string $nombre) {
+                return [
+                    'nombre' => $nombre,
+                    'cantidad' => $items->count(),
+                ];
+            })
+            ->values();
+
+        $resumenMenor = $rows
+            ->groupBy(fn (RegistroVacuna $registro) => $registro->menor ? 'SI' : 'NO')
+            ->map(function ($items, string $valor) {
+                return [
+                    'valor' => $valor,
+                    'cantidad' => $items->count(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'data' => $rows,
+            'summary' => [
+                'total' => $rows->count(),
+                'especies' => $resumenEspecies,
+                'places' => $resumenPlaces,
+                'menor' => $resumenMenor,
+            ],
+            'filters' => $data,
         ]);
     }
 
@@ -56,15 +124,17 @@ class RegistroVacunaController extends Controller
         $registro->domicilio = $this->normalizeOptionalText($data['domicilio'] ?? null);
         $registro->celular = $this->normalizeOptionalText($data['celular'] ?? null);
         $registro->nombre_mascota = $this->normalizeOptionalText($data['nombre_mascota'] ?? null);
-        $registro->especie = $this->normalizeOptionalText($data['especie'] ?? null);
         $registro->raza = $this->normalizeOptionalText($data['raza'] ?? null);
         $registro->menor = (bool) ($data['menor'] ?? false);
         $registro->estado = 'ACTIVO';
+        $registro->lat = $this->normalizeOptionalCoordinate($data['lat'] ?? null);
+        $registro->lng = $this->normalizeOptionalCoordinate($data['lng'] ?? null);
         $registro->fecha_vacuna = $data['fecha_vacuna'];
         $registro->campania_id = $data['campania_id'];
         $registro->especie_id = $data['especie_id'];
         $registro->raza_id = $data['raza_id'] ?? null;
         $registro->place_id = $data['place_id'];
+        $registro->health_center_id = $data['health_center_id'] ?? Auth::user()?->health_center_id;
         $registro->user_id = $userId;
 
         if ($request->hasFile('foto')) {
@@ -75,7 +145,7 @@ class RegistroVacunaController extends Controller
 
         return response()->json([
             'message' => 'Registro de vacuna guardado.',
-            'data' => $registro->fresh(['campania', 'place', 'especie', 'raza', 'user']),
+            'data' => $registro->fresh(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user']),
         ], 201);
     }
 
@@ -84,7 +154,7 @@ class RegistroVacunaController extends Controller
         $this->ensureCanView($request);
 
         return response()->json([
-            'data' => $registroVacuna->load(['campania', 'place', 'especie', 'raza', 'user']),
+            'data' => $registroVacuna->load(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user']),
         ]);
     }
 
@@ -112,11 +182,14 @@ class RegistroVacunaController extends Controller
                 'registro_vacuna' => 'No se puede modificar un registro anulado.',
             ]);
         }
+        $registroVacuna->lat = $this->normalizeOptionalCoordinate($data['lat'] ?? null);
+        $registroVacuna->lng = $this->normalizeOptionalCoordinate($data['lng'] ?? null);
         $registroVacuna->fecha_vacuna = $data['fecha_vacuna'];
         $registroVacuna->campania_id = $data['campania_id'];
         $registroVacuna->especie_id = $data['especie_id'];
         $registroVacuna->raza_id = $data['raza_id'] ?? null;
         $registroVacuna->place_id = $data['place_id'];
+        $registroVacuna->health_center_id = $data['health_center_id'] ?? Auth::user()?->health_center_id;
 
         if ($request->hasFile('foto')) {
             if (!empty($registroVacuna->foto)) {
@@ -130,7 +203,7 @@ class RegistroVacunaController extends Controller
 
         return response()->json([
             'message' => 'Registro de vacuna actualizado.',
-            'data' => $registroVacuna->fresh(['campania', 'place', 'especie', 'raza', 'user']),
+            'data' => $registroVacuna->fresh(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user']),
         ]);
     }
 
@@ -163,7 +236,7 @@ class RegistroVacunaController extends Controller
 
         return response()->json([
             'message' => 'Registro de vacuna anulado.',
-            'data' => $registroVacuna->fresh(['campania', 'place', 'especie', 'raza', 'user']),
+            'data' => $registroVacuna->fresh(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user']),
         ]);
     }
 
@@ -172,6 +245,13 @@ class RegistroVacunaController extends Controller
         $value = trim((string) $value);
 
         return $value === '' ? null : mb_strtoupper($value);
+    }
+
+    private function normalizeOptionalCoordinate(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     private function ensureCanAnular(Request $request): void

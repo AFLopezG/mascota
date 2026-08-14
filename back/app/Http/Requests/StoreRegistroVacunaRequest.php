@@ -31,12 +31,15 @@ class StoreRegistroVacunaRequest extends FormRequest
             'especie' => ['nullable', 'string', 'max:255'],
             'raza' => ['nullable', 'string', 'max:255'],
             'menor' => ['nullable', 'boolean'],
-            'foto' => ['required', 'image', 'max:5120'],
+            'foto' => ['nullable', 'image', 'max:5120'],
+            'lat' => ['nullable', 'string', 'max:255'],
+            'lng' => ['nullable', 'string', 'max:255'],
             'fecha_vacuna' => ['required', 'date'],
             'campania_id' => ['required', 'integer', 'exists:campanias,id'],
             'especie_id' => ['required', 'integer', 'exists:especies,id'],
             'raza_id' => ['nullable', 'integer', 'exists:razas,id'],
             'place_id' => ['required', 'integer', 'exists:places,id'],
+            'health_center_id' => ['nullable', 'integer', 'exists:health_centers,id'],
         ];
     }
 

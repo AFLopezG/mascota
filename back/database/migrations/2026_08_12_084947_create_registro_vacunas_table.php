@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('celular')->nullable();
             //mascota
             $table->string('nombre_mascota')->nullable();
-            $table->string('especie')->nullable();
-            $table->string('raza')->nullable();
             $table->boolean('menor')->default(false);
             $table->string('foto')->nullable();
+            $table->string('lat')->nullable();
+            $table->string('lng')->nullable();
             $table->dateTime('fecha_vacuna')->nullable();
 
             $table->unsignedBigInteger('campania_id');
@@ -34,6 +34,8 @@ return new class extends Migration
             $table->foreign('raza_id')->references('id')->on('razas');
             $table->unsignedBigInteger('place_id');
             $table->foreign('place_id')->references('id')->on('places');
+            $table->unsignedBigInteger('health_center_id');
+            $table->foreign('health_center_id')->references('id')->on('health_centers');
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();

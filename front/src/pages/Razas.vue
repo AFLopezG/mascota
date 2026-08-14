@@ -51,11 +51,11 @@
 
         <q-form @submit.prevent="save">
           <q-card-section class="q-gutter-md">
-            <q-input v-model="form.nombre" label="Nombre" outlined dense maxlength="255" />
+            <q-input v-model="form.nombre" :label="$requiredLabel('Nombre')" outlined dense maxlength="255" />
             <q-select
               v-model="form.especie_id"
               :options="especieOptions"
-              label="Especie"
+              :label="$requiredLabel('Especie')"
               outlined
               dense
               emit-value

@@ -44,7 +44,7 @@
                 <div class="col-12 col-md-3">
                   <q-input
                     v-model="personaForm.cinit"
-                    label="CINIT"
+                    :label="$requiredLabel('CINIT')"
                     outlined
                     dense
                     :loading="verificandoPersona"
@@ -63,7 +63,7 @@
                   />
                 </div>
                 <div class="col-12 col-md-6">
-                  <q-input v-model="personaForm.nombre" label="Nombre" outlined dense />
+                  <q-input v-model="personaForm.nombre" :label="$requiredLabel('Nombre')" outlined dense />
                 </div>
                 <div class="col-12 col-md-6">
                   <q-input v-model="personaForm.paterno" label="Paterno" outlined dense />
@@ -292,7 +292,7 @@
                         <q-input :model-value="codigoMascotaPreview || 'Se generara automaticamente'" label="Codigo" outlined dense readonly />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-input v-model="mascotaForm.nombre" label="Nombre" outlined dense />
+                        <q-input v-model="mascotaForm.nombre" :label="$requiredLabel('Nombre')" outlined dense />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-input v-model="mascotaForm.fec_nac" type="date" label="Fecha de nacimiento" outlined dense />
@@ -307,13 +307,13 @@
                         <q-input v-model.number="mascotaForm.peso" type="number" step="0.01" label="Peso" outlined dense />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-select v-model="mascotaForm.sexo" :options="sexoOptions" label="Sexo" outlined dense emit-value map-options />
+                        <q-select v-model="mascotaForm.sexo" :options="sexoOptions" :label="$requiredLabel('Sexo')" outlined dense emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-select v-model="mascotaForm.estado" :options="estadoOptions" label="Estado" outlined dense emit-value map-options />
+                        <q-select v-model="mascotaForm.estado" :options="estadoOptions" :label="$requiredLabel('Estado')" outlined dense emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
-                        <q-select v-model="mascotaForm.color_principal" :options="colorOptions" label="Color principal" outlined dense use-input input-debounce="0" emit-value map-options />
+                        <q-select v-model="mascotaForm.color_principal" :options="colorOptions" :label="$requiredLabel('Color principal')" outlined dense use-input input-debounce="0" emit-value map-options />
                       </div>
                       <div class="col-12 col-md-4">
                         <q-select v-model="mascotaForm.color_secundario" :options="colorOptions" label="Color secundario" outlined dense use-input input-debounce="0" emit-value map-options clearable />
@@ -323,7 +323,7 @@
                         <q-select
                           v-model="mascotaForm.especie_id"
                           :options="especieOptions"
-                          label="Especie"
+                          :label="$requiredLabel('Especie')"
                           outlined
                           dense
                           emit-value
@@ -336,7 +336,7 @@
                         <q-select
                           v-model="mascotaForm.raza_id"
                           :options="razaOptionsFiltradas"
-                          label="Raza"
+                          :label="$requiredLabel('Raza')"
                           outlined
                           dense
                           use-input
@@ -368,7 +368,7 @@
                         <q-input
                           v-model="mascotaForm.fec_esterilizacion"
                           type="date"
-                          label="Fecha de esterilizacion"
+                          :label="mascotaForm.esterilizado ? $requiredLabel('Fecha de esterilizacion') : 'Fecha de esterilizacion'"
                           outlined
                           dense
                           :disable="!mascotaForm.esterilizado"
