@@ -24,7 +24,6 @@ class RegistroVacuna extends Model
         'domicilio',
         'celular',
         'nombre_mascota',
-        'raza',
         'menor',
         'foto',
         'lat',

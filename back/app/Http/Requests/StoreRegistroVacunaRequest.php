@@ -29,7 +29,6 @@ class StoreRegistroVacunaRequest extends FormRequest
             'celular' => ['nullable', 'string', 'max:255'],
             'nombre_mascota' => ['nullable', 'string', 'max:255'],
             'especie' => ['nullable', 'string', 'max:255'],
-            'raza' => ['nullable', 'string', 'max:255'],
             'menor' => ['nullable', 'boolean'],
             'foto' => ['nullable', 'image', 'max:5120'],
             'lat' => ['nullable', 'string', 'max:255'],
@@ -38,7 +37,7 @@ class StoreRegistroVacunaRequest extends FormRequest
             'campania_id' => ['required', 'integer', 'exists:campanias,id'],
             'especie_id' => ['required', 'integer', 'exists:especies,id'],
             'raza_id' => ['nullable', 'integer', 'exists:razas,id'],
-            'place_id' => ['required', 'integer', 'exists:places,id'],
+            'place_id' => ['nullable', 'integer', 'exists:places,id'],
             'health_center_id' => ['nullable', 'integer', 'exists:health_centers,id'],
         ];
     }

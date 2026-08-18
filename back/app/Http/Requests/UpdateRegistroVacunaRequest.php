@@ -29,7 +29,6 @@ class UpdateRegistroVacunaRequest extends FormRequest
             'celular' => ['nullable', 'string', 'max:255'],
             'nombre_mascota' => ['nullable', 'string', 'max:255'],
             'especie' => ['nullable', 'string', 'max:255'],
-            'raza' => ['nullable', 'string', 'max:255'],
             'menor' => ['nullable', 'boolean'],
             'foto' => ['nullable', 'image', 'max:5120'],
             'lat' => ['nullable', 'string', 'max:255'],

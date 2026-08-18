@@ -151,7 +151,6 @@ class RegistroVacunaController extends Controller
         $registro->domicilio = $this->normalizeOptionalText($data['domicilio'] ?? null);
         $registro->celular = $this->normalizeOptionalText($data['celular'] ?? null);
         $registro->nombre_mascota = $this->normalizeOptionalText($data['nombre_mascota'] ?? null);
-        $registro->raza = $this->normalizeOptionalText($data['raza'] ?? null);
         $registro->menor = (bool) ($data['menor'] ?? false);
         $registro->estado = 'ACTIVO';
         $registro->lat = $this->normalizeOptionalCoordinate($data['lat'] ?? null);
@@ -217,7 +216,6 @@ class RegistroVacunaController extends Controller
         $registroVacuna->celular = $this->normalizeOptionalText($data['celular'] ?? null);
         $registroVacuna->nombre_mascota = $this->normalizeOptionalText($data['nombre_mascota'] ?? null);
         $registroVacuna->especie = $this->normalizeOptionalText($data['especie'] ?? null);
-        $registroVacuna->raza = $this->normalizeOptionalText($data['raza'] ?? null);
         $registroVacuna->menor = (bool) ($data['menor'] ?? false);
         if ($registroVacuna->isAnulado()) {
             throw ValidationException::withMessages([
