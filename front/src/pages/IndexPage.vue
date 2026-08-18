@@ -10,10 +10,10 @@
                 Operacion veterinaria inteligente
               </q-chip>
 
-              <div class="text-h3 text-weight-bolder">
+              <div class="text-h3 text-weight-bolder app-hero__title">
                 Bienvenido, {{ store.user?.nombre || 'usuario' }}
               </div>
-              <div class="text-body1 q-mt-md" style="max-width: 760px;">
+              <div class="text-body1 q-mt-md app-hero__subtitle" style="max-width: 760px;">
                 Controla registros, campañas y catálogos desde un panel limpio, rapido y responsive.
                 La informacion clave esta siempre visible para tomar decisiones con menos clics.
               </div>
@@ -131,17 +131,19 @@
             <q-card-section class="q-pa-lg">
               <div class="row q-col-gutter-lg">
                 <div class="col-12 col-lg-7">
-                  <q-date
-                    v-model="selectedDate"
-                    mask="YYYY-MM-DD"
-                    minimal
-                    bordered
-                    flat
-                    :default-year-month="calendarDefaultMonth"
-                    :events="calendarEventDates"
-                    event-color="secondary"
-                    class="full-width"
-                  />
+                  <div class="app-calendar-frame">
+                    <q-date
+                      v-model="selectedDate"
+                      mask="YYYY-MM-DD"
+                      minimal
+                      bordered
+                      flat
+                      :default-year-month="calendarDefaultMonth"
+                      :events="calendarEventDates"
+                      event-color="secondary"
+                      class="full-width"
+                    />
+                  </div>
                 </div>
                 <div class="col-12 col-lg-5">
                   <div class="text-subtitle2 text-weight-bold q-mb-sm">
@@ -202,7 +204,7 @@
             </q-card-section>
           </q-card>
 
-          <q-card class="app-soft-card q-mt-lg">
+          <!--<q-card class="app-soft-card q-mt-lg">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold">Acciones rapidas</div>
               <div class="text-caption text-grey-7">Atajos frecuentes para el equipo.</div>
@@ -232,7 +234,7 @@
                 </q-item-section>
               </q-item>
             </q-list>
-          </q-card>
+          </q-card>-->
         </div>
       </div>
     </div>
@@ -265,11 +267,13 @@ const campaignDates = computed(() => {
     const end = moment(campaign.fec_fin)
 
     if (start.isValid()) {
-      dates.add(start.format('YYYY-MM-DD'))
-    }
+      const current = start.clone().startOf('day')
+      const rangeEnd = end.isValid() ? end.clone().startOf('day') : current.clone()
 
-    if (end.isValid()) {
-      dates.add(end.format('YYYY-MM-DD'))
+      while (current.isSameOrBefore(rangeEnd, 'day')) {
+        dates.add(current.format('YYYY-MM-DD'))
+        current.add(1, 'day')
+      }
     }
   })
 
@@ -287,7 +291,11 @@ const calendarDefaultMonth = computed(() => (
 ))
 
 const dayCampaigns = computed(() => {
-  const day = moment(selectedDate.value).format('YYYY-MM-DD')
+  const day = moment(selectedDate.value, 'YYYY-MM-DD', true)
+
+  if (!day.isValid()) {
+    return []
+  }
 
   return campaigns.value.filter(campaign => {
     const start = moment(campaign.fec_ini)
@@ -297,7 +305,7 @@ const dayCampaigns = computed(() => {
       return false
     }
 
-    return day >= start.format('YYYY-MM-DD') && day <= end.format('YYYY-MM-DD')
+    return day.isBetween(start.clone().startOf('day'), end.clone().endOf('day'), 'day', '[]')
   })
 })
 

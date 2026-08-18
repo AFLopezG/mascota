@@ -60,17 +60,17 @@
             <div class="text-caption text-grey-7 q-mt-sm">Centros distintos en el rango.</div>
           </q-card>
         </div>
-        <div class="col-12 col-md-3">
+        <!--<div class="col-12 col-md-3">
           <q-card class="app-soft-card q-pa-lg">
             <div class="text-caption text-grey-6">Menores</div>
             <div class="text-h4 text-weight-bold">{{ minorsCount }}</div>
             <div class="text-caption text-grey-7 q-mt-sm">Registros marcados como menor de 1 ano.</div>
           </q-card>
-        </div>
+        </div>-->
       </div>
 
-      <div class="row q-col-gutter-lg">
-        <div class="col-12 col-xl-3">
+      <div class="row q-col-gutter-lg q-ma-xs">
+        <div class="col-12 col-xl-6">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
               <div class="text-subtitle1 text-weight-bold">Por especie</div>
@@ -90,7 +90,7 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-xl-3">
+        <div class="col-12 col-xl-6">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
               <div class="text-subtitle1 text-weight-bold">Por lugar</div>
@@ -110,7 +110,7 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-xl-3">
+        <div class="col-12 col-xl-6">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
               <div class="text-subtitle1 text-weight-bold">Por centro de salud</div>
@@ -130,10 +130,10 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-xl-3">
+        <div class="col-12 col-xl-6">
           <q-card class="app-soft-card app-table">
             <q-card-section class="q-pb-none">
-              <div class="text-subtitle1 text-weight-bold">Menor de 1 ano</div>
+              <div class="text-subtitle1 text-weight-bold">Menor de 1 año</div>
             </q-card-section>
             <q-card-section class="q-pt-sm">
               <q-table
@@ -282,13 +282,13 @@ export default {
       return Array.isArray(this.summary.menor)
         ? this.summary.menor.map(item => ({
             ...item,
-            valor: item.valor === 'SI' ? 'Menor de 1 ano' : 'Mayor de 1 ano'
+            valor: item.valor === 'SI' ? 'Menor de 1 año' : 'Mayor de 1 año'
           }))
         : []
     },
     minorsCount () {
       return this.summaryMenorRows.reduce((total, row) => {
-        return row.valor === 'Menor de 1 ano' ? total + Number(row.cantidad || 0) : total
+        return row.valor === 'Menor de 1 año' ? total + Number(row.cantidad || 0) : total
       }, 0)
     }
   },

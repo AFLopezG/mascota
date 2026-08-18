@@ -1,10 +1,10 @@
 <template>
   <q-page class="app-page">
-    <div class="column q-gutter-lg">
+    <div class="column q-gutter-lg ">
       <AppSectionHeader
         title="Registro de vacunas"
         subtitle="Listado por rango de fechas y registro con captura de fotografia."
-        icon="sym_r_vaccines"
+        icon="sym_r_vaccines"        
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Recargar" :loading="loading" @click="loadData" />

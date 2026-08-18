@@ -305,6 +305,65 @@ body.body--dark .app-metric-card__icon {
   animation: appFadeIn 240ms ease-out;
 }
 
+.app-calendar-frame {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.app-calendar-frame .q-date {
+  min-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .app-page {
+    padding: 16px;
+  }
+
+  .app-hero > .q-card__section,
+  .app-soft-card > .q-card__section,
+  .app-calendar-card > .q-card__section,
+  .app-shell-card > .q-card__section {
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .app-page {
+    padding: 12px;
+  }
+
+  .app-page > .q-card,
+  .app-shell-card,
+  .app-surface,
+  .app-soft-card,
+  .app-metric-card,
+  .app-calendar-card {
+    border-radius: 18px;
+  }
+
+  .app-hero {
+    border-radius: 20px;
+  }
+
+  .app-hero::before,
+  .app-hero::after {
+    display: none;
+  }
+
+  .app-hero__title {
+    font-size: 2rem;
+    line-height: 1.08;
+  }
+
+  .app-hero__subtitle {
+    font-size: 0.95rem;
+  }
+
+  .app-calendar-frame .q-date {
+    min-width: 300px;
+  }
+}
+
 @keyframes appFadeIn {
   from {
     opacity: 0;

@@ -156,7 +156,7 @@
               <q-item-section avatar><q-icon name="sym_r_local_hospital" /></q-item-section>
               <q-item-section>
                 <q-item-label>Centros de salud</q-item-label>
-                <q-item-label caption>CatÃ¡logo sanitario</q-item-label>
+                <q-item-label caption>Catalogo sanitario</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
