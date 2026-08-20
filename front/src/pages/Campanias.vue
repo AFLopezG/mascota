@@ -196,6 +196,11 @@ export default {
       return
     }
 
+    if (!this.store.bool_campanias) {
+      this.$router.push('/home')
+      return
+    }
+
     this.loadInitialData()
   },
   methods: {
@@ -203,6 +208,10 @@ export default {
       await Promise.all([this.loadTipos(), this.loadData()])
     },
     async loadTipos () {
+      if (!this.store.bool_campanias) {
+        return
+      }
+
       try {
         const { data } = await this.$api.get('campania-tipo')
         this.campaniaTipos = Array.isArray(data) ? data : []
@@ -211,6 +220,10 @@ export default {
       }
     },
     async loadData () {
+      if (!this.store.bool_campanias) {
+        return
+      }
+
       this.loading = true
       try {
         const { data } = await this.$api.get('campania')
@@ -225,11 +238,15 @@ export default {
       }
     },
     openCreate () {
+      if (!this.store.bool_registrar_campanias) {
+        return
+      }
+
       this.form = emptyForm()
       this.dialog = true
     },
     openEdit (row) {
-      if (this.isLocked(row)) {
+      if (!this.store.bool_modificar_campanias || this.isLocked(row)) {
         return
       }
 
@@ -246,6 +263,10 @@ export default {
       this.dialog = true
     },
     async save () {
+      if (this.form.id ? !this.store.bool_modificar_campanias : !this.store.bool_registrar_campanias) {
+        return
+      }
+
       this.saving = true
       try {
         const payload = {
@@ -277,6 +298,10 @@ export default {
       }
     },
     confirmAnular (row) {
+      if (!this.store.bool_anular_campanias || !this.canAnular(row)) {
+        return
+      }
+
       this.$q.dialog({
         title: 'Anular campania',
         message: `Desea anular "${row.nombre}"?`,

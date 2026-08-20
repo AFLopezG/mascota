@@ -8,6 +8,7 @@ use App\Models\Denuncia;
 use App\Models\DenunciaLog;
 use App\Models\DenunciaTipo;
 use App\Models\Persona;
+use App\Models\Personal;
 use App\Models\Proceso;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class DenunciaController extends Controller
                 'user',
                 'tipos',
                 'logs' => function ($relation) {
-                    $relation->with(['proceso', 'user'])->orderByDesc('fechaHora');
+                    $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
                 },
             ]);
 
@@ -55,38 +56,7 @@ class DenunciaController extends Controller
             ->orderByDesc('fec_denuncia')
             ->orderByDesc('id')
             ->get()
-            ->map(function (Denuncia $denuncia) {
-                $logs = $denuncia->logs->values();
-
-                return [
-                    'id' => $denuncia->id,
-                    'numero' => $denuncia->numero,
-                    'fec_denuncia' => $denuncia->fec_denuncia,
-                    'direccion' => $denuncia->direccion,
-                    'descripcion' => $denuncia->descripcion,
-                    'zona' => $denuncia->zona,
-                    'color' => $denuncia->color,
-                    'tamanio' => $denuncia->tamanio,
-                    'estado' => $denuncia->estado,
-                    'observacion' => $denuncia->observacion,
-                    'fiscalia' => $denuncia->fiscalia,
-                    'nom_afectado' => $denuncia->nom_afectado,
-                    'edad' => $denuncia->edad,
-                    'telefono' => $denuncia->telefono,
-                    'dir_inicidente' => $denuncia->dir_inicidente,
-                    'tipo_lesion' => $denuncia->tipo_lesion,
-                    'dias_obser' => $denuncia->dias_obser,
-                    'resultado' => $denuncia->resultado,
-                    'obs' => $denuncia->obs,
-                    'persona' => $denuncia->persona,
-                    'mascota' => $denuncia->mascota,
-                    'raza' => $denuncia->raza,
-                    'user' => $denuncia->user,
-                    'tipos' => $denuncia->tipos,
-                    'logs' => $logs,
-                    'current_log' => $logs->first(),
-                ];
-            });
+            ->map(fn (Denuncia $denuncia) => $this->formatDenuncia($denuncia));
 
         return response()->json([
             'data' => $denuncias,
@@ -100,18 +70,26 @@ class DenunciaController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(
-            Denuncia::with([
-                'persona',
-                'mascota.raza.especie',
-                'mascota.categoria',
-                'raza.especie',
-                'user',
-                'tipos',
-                'logs.proceso',
-                'logs.user',
-            ])->orderByDesc('fec_denuncia')->get()
-        );
+        $cutoff = now()->subDays(365);
+
+        $denuncias = Denuncia::with([
+            'persona',
+            'mascota.raza.especie',
+            'mascota.categoria',
+            'raza.especie',
+            'user',
+            'tipos',
+            'logs' => function ($relation) {
+                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
+            },
+        ])
+            ->get()
+            ->map(fn (Denuncia $denuncia) => $this->formatDenuncia($denuncia))
+            ->filter(fn (array $row) => $this->shouldShowDenuncia($row, $cutoff))
+            ->sortByDesc(fn (array $row) => $row['last_log_at']?->timestamp ?? $row['fec_denuncia']?->timestamp ?? 0)
+            ->values();
+
+        return response()->json($denuncias);
     }
 
     public function store(StoreDenunciaRequest $request): JsonResponse
@@ -194,6 +172,7 @@ class DenunciaController extends Controller
     {
         $data = $request->validate([
             'proceso_id' => ['required', 'integer', 'exists:procesos,id'],
+            'personal_id' => ['nullable', 'integer', 'exists:personals,id'],
             'actividad' => ['required', 'string', 'max:255'],
             'resultado' => ['required', 'string', 'max:255'],
             'obser' => ['nullable', 'string'],
@@ -223,6 +202,7 @@ class DenunciaController extends Controller
             'denuncia_id' => $denuncia->id,
             'user_id' => $request->user()->id,
             'proceso_id' => $selectedProcess->id,
+            'personal_id' => $data['personal_id'] ?? null,
         ]);
 
         $denuncia->estado = $selectedProcess->descripcion;
@@ -315,14 +295,15 @@ class DenunciaController extends Controller
             'raza.especie',
             'user',
             'tipos',
-            'logs.proceso',
-            'logs.user',
+            'logs' => function ($relation) {
+                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
+            },
         ]);
     }
 
     private function currentProcessOrder(Denuncia $denuncia): int
     {
-        $lastLog = $denuncia->logs()->with('proceso')->get()->sortByDesc(fn ($log) => $log->proceso?->orden ?? 0)->first();
+        $lastLog = $denuncia->logs()->with('proceso')->orderByDesc('fechaHora')->first();
 
         return (int) ($lastLog?->proceso?->orden ?? 0);
     }
@@ -387,6 +368,67 @@ class DenunciaController extends Controller
         $persona->materno = $this->normalizeOptionalText($data['persona_materno'] ?? null) ?: null;
         $persona->telefono = $this->normalizeOptionalText($data['persona_telefono'] ?? null) ?: null;
         $persona->emergencia = $this->normalizeOptionalText($data['persona_emergencia'] ?? null) ?: null;
+    }
+
+    private function formatDenuncia(Denuncia $denuncia): array
+    {
+        $logs = $denuncia->logs
+            ->sortByDesc(fn (DenunciaLog $log) => $log->fechaHora?->timestamp ?? 0)
+            ->values();
+        $currentLog = $logs->first();
+        $currentOrder = $this->currentProcessOrderFromLogs($logs);
+        $maxOrder = (int) Proceso::max('orden');
+
+        return [
+            'id' => $denuncia->id,
+            'numero' => $denuncia->numero,
+            'fec_denuncia' => $denuncia->fec_denuncia,
+            'direccion' => $denuncia->direccion,
+            'descripcion' => $denuncia->descripcion,
+            'zona' => $denuncia->zona,
+            'color' => $denuncia->color,
+            'tamanio' => $denuncia->tamanio,
+            'estado' => $denuncia->estado,
+            'observacion' => $denuncia->observacion,
+            'fiscalia' => $denuncia->fiscalia,
+            'nom_afectado' => $denuncia->nom_afectado,
+            'edad' => $denuncia->edad,
+            'telefono' => $denuncia->telefono,
+            'dir_inicidente' => $denuncia->dir_inicidente,
+            'tipo_lesion' => $denuncia->tipo_lesion,
+            'dias_obser' => $denuncia->dias_obser,
+            'resultado' => $denuncia->resultado,
+            'obs' => $denuncia->obs,
+            'persona' => $denuncia->persona,
+            'mascota' => $denuncia->mascota,
+            'raza' => $denuncia->raza,
+            'user' => $denuncia->user,
+            'tipos' => $denuncia->tipos,
+            'logs' => $logs,
+            'current_log' => $currentLog,
+            'last_log_at' => $currentLog?->fechaHora,
+            'current_process_order' => $currentOrder,
+            'is_finished' => $maxOrder > 0 ? $currentOrder >= $maxOrder : false,
+        ];
+    }
+
+    private function shouldShowDenuncia(array $row, $cutoff): bool
+    {
+        $lastLogAt = $row['last_log_at'] ?? null;
+        $isRecent = $lastLogAt && $lastLogAt->greaterThanOrEqualTo($cutoff);
+
+        return $isRecent || !($row['is_finished'] ?? false);
+    }
+
+    private function currentProcessOrderFromLogs($logs): int
+    {
+        if (!method_exists($logs, 'isEmpty') || $logs->isEmpty()) {
+            return 0;
+        }
+
+        $lastLog = $logs->first();
+
+        return (int) ($lastLog?->proceso?->orden ?? 0);
     }
 
     private function normalizeOptionalText(?string $value, bool $uppercase = true): string

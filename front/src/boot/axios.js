@@ -58,6 +58,10 @@ export default boot(({ app,router }) => {
     store.bool_denuncia = false,
     store.bool_reporte_denuncia = false,
     store.bool_tipo_denuncia = false,
+    store.bool_procesos = false,
+    store.bool_registrar_procesos = false,
+    store.bool_modificar_procesos = false,
+    store.bool_eliminar_procesos = false,
     store.bool_anular_registro_vacuna = false,
     store.bool_places = false,
     store.bool_registrar_places = false,
@@ -67,7 +71,12 @@ export default boot(({ app,router }) => {
     store.bool_registrar_health_centers = false,
     store.bool_modificar_health_centers = false,
     store.bool_eliminar_health_centers = false,
+    store.bool_personals = false,
+    store.bool_registrar_personals = false,
+    store.bool_modificar_personals = false,
+    store.bool_eliminar_personals = false,
     store.bool_registro_vacunas = false,
+    store.bool_reporte_registro_vacunas = false,
     store.bool_registrar_registro_vacuna = false
   }
 
@@ -109,6 +118,10 @@ export default boot(({ app,router }) => {
       if(r.id===32) store.bool_denuncia = true
       if(r.id===33) store.bool_reporte_denuncia = true
       if(r.id===34) store.bool_tipo_denuncia = true
+      if(r.id===51) store.bool_procesos = true
+      if(r.id===52) store.bool_registrar_procesos = true
+      if(r.id===53) store.bool_modificar_procesos = true
+      if(r.id===54) store.bool_eliminar_procesos = true
       if(r.id===35) store.bool_anular_registro_vacuna = true
       if(r.id===36) store.bool_places = true
       if(r.id===37) store.bool_registrar_places = true
@@ -116,10 +129,15 @@ export default boot(({ app,router }) => {
       if(r.id===39) store.bool_eliminar_places = true
       if(r.id===40) store.bool_registro_vacunas = true
       if(r.id===41) store.bool_registrar_registro_vacuna = true
+      if(r.id===46) store.bool_reporte_registro_vacunas = true
       if(r.id===42) store.bool_health_centers = true
       if(r.id===43) store.bool_registrar_health_centers = true
       if(r.id===44) store.bool_modificar_health_centers = true
       if(r.id===45) store.bool_eliminar_health_centers = true
+      if(r.id===47) store.bool_personals = true
+      if(r.id===48) store.bool_registrar_personals = true
+      if(r.id===49) store.bool_modificar_personals = true
+      if(r.id===50) store.bool_eliminar_personals = true
 
 
     });

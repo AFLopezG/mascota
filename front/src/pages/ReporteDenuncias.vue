@@ -110,7 +110,7 @@
 
                 <template #body-cell-estado="props">
                   <q-td :props="props">
-                    <q-badge :color="estadoColor(props.row.estado)" rounded>
+                    <q-badge :color="denunciaColor(props.row)" text-color="white" rounded>
                       {{ props.row.estado || 'SIN ESTADO' }}
                     </q-badge>
                   </q-td>
@@ -157,7 +157,7 @@
                     Denuncia #{{ selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
                   </div>
                 </div>
-                <q-badge color="white" text-color="primary" rounded>
+                <q-badge :color="denunciaColor(selectedDenuncia)" text-color="white" rounded>
                   {{ selectedDenuncia.estado || 'SIN ESTADO' }}
                 </q-badge>
               </div>
@@ -417,6 +417,9 @@ export default {
         return 'secondary'
       }
       return 'primary'
+    },
+    denunciaColor (row) {
+      return row?.current_log?.proceso?.color || this.estadoColor(row?.estado)
     },
     formatDateTime (value) {
       return value ? moment(value).format('DD/MM/YYYY HH:mm') : '-'

@@ -2,19 +2,19 @@
   <q-page class="app-page">
     <div class="column q-gutter-lg">
       <AppSectionHeader
-        title="Tipos de denuncia"
-        subtitle="Registro y mantenimiento del catalogo de tipos de denuncia."
-        icon="sym_r_report"
+        title="Personal"
+        subtitle="Registro y mantenimiento de personal disponible para los logs de denuncias."
+        icon="sym_r_badge"
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Recargar" :loading="loading" @click="loadData" />
-          <q-btn v-if="store.bool_tipo_denuncia" color="primary" icon="sym_r_add" label="Nuevo tipo" @click="openCreate" />
+          <q-btn v-if="store.bool_registrar_personals" color="primary" icon="sym_r_add" label="Nuevo personal" @click="openCreate" />
         </template>
       </AppSectionHeader>
 
       <q-card class="app-soft-card app-table">
         <q-card-section class="q-pb-none">
-          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar tipo..." />
+          <q-input v-model="filter" outlined dense debounce="300" placeholder="Buscar por cédula, nombre o celular..." />
         </q-card-section>
 
         <q-card-section class="q-pt-sm">
@@ -29,8 +29,8 @@
           >
             <template #body-cell-actions="props">
               <q-td :props="props" class="text-right">
-                <q-btn v-if="store.bool_tipo_denuncia" flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
-                <q-btn v-if="store.bool_tipo_denuncia" flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
+                <q-btn v-if="store.bool_modificar_personals" flat dense icon="sym_r_edit" color="primary" @click="openEdit(props.row)" />
+                <q-btn v-if="store.bool_eliminar_personals" flat dense icon="sym_r_delete" color="negative" @click="confirmDelete(props.row)" />
               </q-td>
             </template>
           </q-table>
@@ -39,19 +39,21 @@
     </div>
 
     <q-dialog v-model="dialog" persistent>
-      <q-card class="app-soft-card" style="min-width: 420px; width: 100%; max-width: 520px;">
+      <q-card class="app-soft-card" style="min-width: 420px; width: 100%; max-width: 540px;">
         <q-card-section class="bg-primary text-white">
-          <div class="text-h6">{{ form.id ? 'Modificar tipo de denuncia' : 'Registrar tipo de denuncia' }}</div>
+          <div class="text-h6">{{ form.id ? 'Modificar personal' : 'Registrar personal' }}</div>
         </q-card-section>
 
         <q-form @submit.prevent="save">
           <q-card-section class="q-gutter-md">
+            <q-input v-model="form.cedula" :label="$requiredLabel('Cédula')" outlined dense maxlength="255" />
             <q-input v-model="form.nombre" :label="$requiredLabel('Nombre')" outlined dense maxlength="255" />
+            <q-input v-model="form.celular" label="Celular" outlined dense maxlength="255" hint="Opcional" />
           </q-card-section>
 
           <q-card-actions align="right">
             <q-btn flat label="Cancelar" color="negative" v-close-popup />
-            <q-btn v-if="store.bool_tipo_denuncia" :label="form.id ? 'Actualizar' : 'Guardar'" color="primary" type="submit" :loading="saving" />
+            <q-btn v-if="store.bool_registrar_personals || store.bool_modificar_personals" :label="form.id ? 'Actualizar' : 'Guardar'" color="primary" type="submit" :loading="saving" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -65,11 +67,13 @@ import { globalStore } from 'src/stores/globalStore'
 
 const emptyForm = () => ({
   id: null,
-  nombre: ''
+  cedula: '',
+  nombre: '',
+  celular: ''
 })
 
 export default {
-  name: 'DenunciaTiposPage',
+  name: 'PersonalsPage',
   components: {
     AppSectionHeader
   },
@@ -83,7 +87,9 @@ export default {
       dialog: false,
       form: emptyForm(),
       columns: [
+        { name: 'cedula', label: 'Cédula', field: 'cedula', align: 'left', sortable: true },
         { name: 'nombre', label: 'Nombre', field: 'nombre', align: 'left', sortable: true },
+        { name: 'celular', label: 'Celular', field: 'celular', align: 'left' },
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ]
     }
@@ -91,11 +97,18 @@ export default {
   computed: {
     filteredRows () {
       const term = this.filter.trim().toLowerCase()
+
       if (!term) {
         return this.rows
       }
 
-      return this.rows.filter(row => String(row.nombre || '').toLowerCase().includes(term))
+      return this.rows.filter(row => {
+        return [
+          row.cedula,
+          row.nombre,
+          row.celular
+        ].some(value => String(value || '').toLowerCase().includes(term))
+      })
     }
   },
   created () {
@@ -104,7 +117,7 @@ export default {
       return
     }
 
-    if (!this.store.bool_tipo_denuncia) {
+    if (!this.store.bool_personals) {
       this.$router.push('/home')
       return
     }
@@ -115,16 +128,16 @@ export default {
     async loadData () {
       this.loading = true
       try {
-        const { data } = await this.$api.get('denuncia-tipo')
+        const { data } = await this.$api.get('personal')
         this.rows = Array.isArray(data) ? data : []
       } catch (error) {
-        this.notifyError(error, 'No se pudieron cargar los tipos de denuncia.')
+        this.notifyError(error, 'No se pudo cargar el personal.')
       } finally {
         this.loading = false
       }
     },
     openCreate () {
-      if (!this.store.bool_tipo_denuncia) {
+      if (!this.store.bool_registrar_personals) {
         return
       }
 
@@ -132,28 +145,34 @@ export default {
       this.dialog = true
     },
     openEdit (row) {
-      if (!this.store.bool_tipo_denuncia) {
+      if (!this.store.bool_modificar_personals) {
         return
       }
 
       this.form = {
         id: row.id,
-        nombre: row.nombre || ''
+        cedula: row.cedula || '',
+        nombre: row.nombre || '',
+        celular: row.celular || ''
       }
       this.dialog = true
     },
     async save () {
-      if (!this.store.bool_tipo_denuncia) {
+      if (this.form.id ? !this.store.bool_modificar_personals : !this.store.bool_registrar_personals) {
         return
       }
 
       this.saving = true
       try {
-        const payload = { nombre: this.form.nombre }
+        const payload = {
+          cedula: this.form.cedula,
+          nombre: this.form.nombre,
+          celular: this.form.celular
+        }
 
         const { data } = this.form.id
-          ? await this.$api.put(`denuncia-tipo/${this.form.id}`, payload)
-          : await this.$api.post('denuncia-tipo', payload)
+          ? await this.$api.put(`personal/${this.form.id}`, payload)
+          : await this.$api.post('personal', payload)
 
         this.$q.notify({
           message: data.message || 'Guardado correctamente.',
@@ -161,21 +180,22 @@ export default {
           position: 'top',
           timeout: 2000
         })
+
         this.dialog = false
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo guardar el tipo de denuncia.')
+        this.notifyError(error, 'No se pudo guardar el personal.')
       } finally {
         this.saving = false
       }
     },
     confirmDelete (row) {
-      if (!this.store.bool_tipo_denuncia) {
+      if (!this.store.bool_eliminar_personals) {
         return
       }
 
       this.$q.dialog({
-        title: 'Eliminar tipo de denuncia',
+        title: 'Eliminar personal',
         message: `Desea eliminar "${row.nombre}"?`,
         cancel: true,
         persistent: true
@@ -183,16 +203,17 @@ export default {
     },
     async remove (row) {
       try {
-        const { data } = await this.$api.delete(`denuncia-tipo/${row.id}`)
+        const { data } = await this.$api.delete(`personal/${row.id}`)
         this.$q.notify({
-          message: data.message || 'Tipo de denuncia eliminado.',
+          message: data.message || 'Personal eliminado.',
           color: 'positive',
           position: 'top',
           timeout: 2000
         })
+
         await this.loadData()
       } catch (error) {
-        this.notifyError(error, 'No se pudo eliminar el tipo de denuncia.')
+        this.notifyError(error, 'No se pudo eliminar el personal.')
       }
     },
     notifyError (error, fallback) {

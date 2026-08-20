@@ -115,7 +115,7 @@
                 <q-item-label caption>Alta y listado por fechas</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item v-if="store.bool_registro_vacunas" clickable v-ripple to="/reporte-registro-vacunas" exact class="app-nav-item">
+            <q-item v-if="store.bool_reporte_registro_vacunas" clickable v-ripple to="/reporte-registro-vacunas" exact class="app-nav-item">
               <q-item-section avatar>
                 <q-icon name="sym_r_assessment" />
               </q-item-section>
@@ -152,11 +152,29 @@
               </q-item-section>
             </q-item>
 
+            <q-item v-if="store.bool_procesos" clickable v-ripple to="/procesos" exact class="app-nav-item">
+              <q-item-section avatar>
+                <q-icon name="sym_r_timeline" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Procesos</q-item-label>
+                <q-item-label caption>Flujo y colores de estado</q-item-label>
+              </q-item-section>
+            </q-item>
+
             <q-item v-if="store.bool_health_centers" clickable v-ripple to="/health-centers" exact class="app-nav-item">
               <q-item-section avatar><q-icon name="sym_r_local_hospital" /></q-item-section>
               <q-item-section>
                 <q-item-label>Centros de salud</q-item-label>
                 <q-item-label caption>Catalogo sanitario</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="store.bool_personals" clickable v-ripple to="/personals" exact class="app-nav-item">
+              <q-item-section avatar><q-icon name="sym_r_badge" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Personal</q-item-label>
+                <q-item-label caption>Registro y mantenimiento</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -272,6 +290,7 @@ const hasCatalogAccess = computed(() => (
   store.bool_categorias ||
   store.bool_campania_tipos ||
   store.bool_campanias ||
+  store.bool_procesos ||
   store.bool_places ||
   store.bool_health_centers
 ))
@@ -280,9 +299,11 @@ const hasGeneralAccess = computed(() => (
   store.bool_registro_persona_mascota ||
   store.bool_busqueda ||
   store.bool_registro_vacunas ||
+  store.bool_reporte_registro_vacunas ||
   store.bool_denuncia ||
   store.bool_reporte_denuncia ||
-  store.bool_tipo_denuncia
+  store.bool_tipo_denuncia ||
+  store.bool_personals
 ))
 
 const hasAdminAccess = computed(() => store.bool_roles || store.bool_usuarios)

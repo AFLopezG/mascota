@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRegistroVacunaRequest;
 use App\Http\Requests\UpdateRegistroVacunaRequest;
 use App\Models\RegistroVacuna;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,79 +37,29 @@ class RegistroVacunaController extends Controller
 
     public function reporte(Request $request): JsonResponse
     {
-        $this->ensureCanView($request);
-
-        $data = $request->validate([
-            'fecha_desde' => ['nullable', 'date'],
-            'fecha_hasta' => ['nullable', 'date'],
-        ]);
-
-        $baseQuery = RegistroVacuna::query()
-            ->with(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user'])
-            ->when(!empty($data['fecha_desde']), function ($query) use ($data) {
-                $query->whereDate('fecha_vacuna', '>=', $data['fecha_desde']);
-            })
-            ->when(!empty($data['fecha_hasta']), function ($query) use ($data) {
-                $query->whereDate('fecha_vacuna', '<=', $data['fecha_hasta']);
-            })
-            ->where('user_id', Auth::id());
-
-        $rows = $baseQuery
-            ->orderByDesc('fecha_vacuna')
-            ->orderByDesc('id')
-            ->get();
-        error_log($rows);
-        $resumenEspecies = $rows
-            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->especie) ? $registro->especie->nombre : (string)($registro->especie ?: 'SIN ESPECIE'))
-            ->map(function ($items, string $nombre) {
-                return [
-                    'nombre' => $nombre,
-                    'cantidad' => $items->count(),
-                ];
-            })
-            ->values();
-
-        $resumenPlaces = $rows
-            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->place) ? $registro->place->nombre : (string)($registro->place ?: 'SIN LUGAR'))
-            ->map(function ($items, string $nombre) {
-                return [
-                    'nombre' => $nombre,
-                    'cantidad' => $items->count(),
-                ];
-            })
-            ->values();
-
-        $resumenHealthCenters = $rows
-            ->groupBy(fn (RegistroVacuna $registro) => is_object($registro->healthCenter) ? $registro->healthCenter->nombre : (string)($registro->healthCenter ?: 'SIN CENTRO DE SALUD'))
-            ->map(function ($items, string $nombre) {
-                return [
-                    'nombre' => $nombre,
-                    'cantidad' => $items->count(),
-                ];
-            })
-            ->values();
-
-        $resumenMenor = $rows
-            ->groupBy(fn (RegistroVacuna $registro) => $registro->menor ? 'SI' : 'NO')
-            ->map(function ($items, string $valor) {
-                return [
-                    'valor' => $valor,
-                    'cantidad' => $items->count(),
-                ];
-            })
-            ->values();
+        $payload = $this->buildReportPayload($request);
 
         return response()->json([
-            'data' => $rows,
-            'summary' => [
-                'total' => $rows->count(),
-                'especies' => $resumenEspecies,
-                'places' => $resumenPlaces,
-                'health_centers' => $resumenHealthCenters,
-                'menor' => $resumenMenor,
-            ],
-            'filters' => $data,
+            'data' => $payload['rows'],
+            'summary' => $payload['summary'],
+            'filters' => $payload['filters'],
         ]);
+    }
+
+    public function reportePdf(Request $request)
+    {
+        $payload = $this->buildReportPayload($request);
+
+        $pdf = Pdf::loadView('pdf.reporte-registro-vacunas', $payload)
+            ->setPaper('a4', 'landscape');
+
+        $filename = sprintf(
+            'reporte-vacunas-%s-a-%s.pdf',
+            str_replace('-', '', (string) ($payload['filters']['fecha_desde'] ?? 'inicio')),
+            str_replace('-', '', (string) ($payload['filters']['fecha_hasta'] ?? 'fin'))
+        );
+
+        return $pdf->download($filename);
     }
 
     public function create()
@@ -318,6 +269,110 @@ class RegistroVacunaController extends Controller
                 'permission' => 'No tiene permisos para ver registros de vacuna.',
             ]);
         }
+    }
+
+    private function ensureCanReport(Request $request): void
+    {
+        $user = $request->user();
+        $user?->loadMissing('rol.permisos');
+        $hasPermission = $user?->rol?->permisos?->contains('id', 46) ?? false;
+
+        if (!$hasPermission) {
+            throw ValidationException::withMessages([
+                'permission' => 'No tiene permisos para ver el reporte de vacunas.',
+            ]);
+        }
+    }
+
+    private function buildReportPayload(Request $request): array
+    {
+        $this->ensureCanReport($request);
+
+        $filters = $request->validate([
+            'fecha_desde' => ['nullable', 'date'],
+            'fecha_hasta' => ['nullable', 'date'],
+        ]);
+
+        $rows = RegistroVacuna::query()
+            ->with(['campania', 'place', 'healthCenter', 'especie', 'raza', 'user'])
+            ->when(!empty($filters['fecha_desde']), function ($query) use ($filters) {
+                $query->whereDate('fecha_vacuna', '>=', $filters['fecha_desde']);
+            })
+            ->when(!empty($filters['fecha_hasta']), function ($query) use ($filters) {
+                $query->whereDate('fecha_vacuna', '<=', $filters['fecha_hasta']);
+            })
+            ->where('user_id', Auth::id())
+            ->orderByDesc('fecha_vacuna')
+            ->orderByDesc('id')
+            ->get();
+
+        return [
+            'filters' => $filters,
+            'rows' => $rows,
+            'pdf_rows' => $rows->map(fn (RegistroVacuna $registro) => $this->buildReportRow($registro))->values(),
+            'summary' => [
+                'total' => $rows->count(),
+                'especies' => $this->buildGroupedSummary($rows, fn (RegistroVacuna $registro) => $this->resolveEspecieLabel($registro)),
+                'health_centers' => $this->buildGroupedSummary($rows, fn (RegistroVacuna $registro) => $this->resolveHealthCenterLabel($registro)),
+                'edad' => [
+                    [
+                        'valor' => 'Menor de 1 año',
+                        'cantidad' => $rows->filter(fn (RegistroVacuna $registro) => (bool) $registro->menor)->count(),
+                    ],
+                    [
+                        'valor' => 'Mayor de 1 año',
+                        'cantidad' => $rows->filter(fn (RegistroVacuna $registro) => !((bool) $registro->menor))->count(),
+                    ],
+                ],
+            ],
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ];
+    }
+
+    private function buildGroupedSummary($rows, callable $groupResolver)
+    {
+        return $rows
+            ->groupBy($groupResolver)
+            ->map(function ($items, string $nombre) {
+                return [
+                    'nombre' => $nombre,
+                    'cantidad' => $items->count(),
+                ];
+            })
+            ->values();
+    }
+
+    private function buildReportRow(RegistroVacuna $registro): array
+    {
+        return [
+            'fecha_vacuna' => $registro->fecha_vacuna,
+            'cedula' => $registro->cedula,
+            'nombre' => $registro->nombre,
+            'nombre_mascota' => $registro->nombre_mascota,
+            'especie' => $this->resolveEspecieLabel($registro),
+            'place' => $this->resolvePlaceLabel($registro),
+            'health_center' => $this->resolveHealthCenterLabel($registro),
+            'menor' => (bool) $registro->menor,
+            'menor_label' => (bool) $registro->menor ? 'Menor de 1 año' : 'Mayor de 1 año',
+        ];
+    }
+
+    private function resolveEspecieLabel(RegistroVacuna $registro): string
+    {
+        return $registro->especie?->nombre
+            ?? (is_string($registro->especie) && trim($registro->especie) !== '' ? $registro->especie : 'SIN ESPECIE');
+    }
+
+    private function resolvePlaceLabel(RegistroVacuna $registro): string
+    {
+        return $registro->place?->nombre
+            ?? (is_string($registro->place) && trim($registro->place) !== '' ? $registro->place : 'SIN LUGAR');
+    }
+
+    private function resolveHealthCenterLabel(RegistroVacuna $registro): string
+    {
+        return $registro->healthCenter?->nombre
+            ?? (is_string($registro->healthCenter) && trim($registro->healthCenter) !== '' ? $registro->healthCenter : 'SIN CENTRO DE SALUD');
     }
 
     private function ensureCanCreate(Request $request): void

@@ -8,7 +8,7 @@
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Recargar" :loading="loading" @click="loadData" />
-          <q-btn color="primary" icon="sym_r_add" label="Nueva denuncia" @click="openCreate" />
+          <q-btn v-if="store.bool_denuncia" color="primary" icon="sym_r_add" label="Nueva denuncia" @click="openCreate" />
         </template>
       </AppSectionHeader>
 
@@ -66,20 +66,34 @@
 
                 <template #body-cell-estado="props">
                   <q-td :props="props">
-                    <q-badge :color="estadoColor(props.row.estado)" rounded>
+                    <q-badge :color="denunciaColor(props.row)" text-color="white" rounded>
                       {{ props.row.estado || 'SIN ESTADO' }}
                     </q-badge>
                   </q-td>
                 </template>
 
+                <template #body-cell-ultimo_log="props">
+                  <q-td :props="props">
+                    <div class="column">
+                      <span class="text-weight-medium">
+                        {{ formatDateTime(props.row.last_log_at) }}
+                      </span>
+                      <span class="text-caption text-grey-7">
+                        {{ props.row.current_log?.proceso?.descripcion || props.row.current_log?.actividad || '-' }}
+                      </span>
+                    </div>
+                  </q-td>
+                </template>
+
                 <template #body-cell-actions="props">
                   <q-td :props="props" class="text-right">
-                    <q-btn flat dense icon="sym_r_list_alt" color="primary" @click.stop="selectDenuncia(null, props.row)" />
-                    <q-btn
-                      flat
-                      dense
-                      icon="sym_r_add_task"
-                      color="positive"
+                <q-btn flat dense icon="sym_r_list_alt" color="primary" @click.stop="selectDenuncia(null, props.row)" />
+                <q-btn
+                  v-if="store.bool_denuncia"
+                  flat
+                  dense
+                  icon="sym_r_add_task"
+                  color="positive"
                       :disable="!canAdvance(props.row)"
                       @click.stop="openLogDialog(props.row)"
                     />
@@ -100,7 +114,7 @@
                     {{ selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
                   </div>
                 </div>
-                <q-badge color="white" text-color="primary" rounded>
+                <q-badge :color="denunciaColor(selectedDenuncia)" text-color="white" rounded>
                   {{ selectedDenuncia.estado || 'SIN ESTADO' }}
                 </q-badge>
               </div>
@@ -172,6 +186,7 @@
                   <div class="text-caption text-grey-7">Seguimiento por proceso.</div>
                 </div>
                 <q-btn
+                  v-if="store.bool_denuncia"
                   color="positive"
                   icon="sym_r_add_task"
                   label="Registrar log"
@@ -458,7 +473,7 @@
         <q-card-section>
           <q-form class="q-gutter-lg" @submit.prevent="saveLog">
             <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-6">
                 <q-select
                   v-model="logForm.proceso_id"
                   :options="nextProcessOptions"
@@ -472,11 +487,34 @@
                   :disable="!nextProcessOptions.length"
                 />
               </div>
-              <div class="col-12 col-md-4">
-                <q-input v-model="logForm.resultado" label="Resultado" outlined dense />
+              <div class="col-12 col-md-6">
+                <q-select
+                  v-model="logForm.personal_id"
+                  :options="personalOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  use-input
+                  fill-input
+                  hide-selected
+                  input-debounce="300"
+                  label="Personal"
+                  outlined
+                  dense
+                  clearable
+                  :loading="buscandoPersonal"
+                  hint="Opcional. Busca por cédula, nombre o celular."
+                  @filter="buscarPersonals"
+                  @update:model-value="syncPersonal"
+                />
               </div>
+
               <div class="col-12">
                 <q-input v-model="logForm.actividad" label="Actividad" outlined dense />
+              </div>
+              <div class="col-12">
+                <q-input v-model="logForm.resultado" label="Resultado" outlined dense />
               </div>
               <div class="col-12">
                 <q-input v-model="logForm.obser" label="Observacion" outlined dense type="textarea" autogrow />
@@ -533,6 +571,7 @@ const emptyForm = () => ({
 
 const emptyLogForm = () => ({
   proceso_id: null,
+  personal_id: null,
   actividad: '',
   resultado: '',
   obser: ''
@@ -573,12 +612,18 @@ export default {
       especies: [],
       razas: [],
       procesos: [],
+      personals: [],
       denunciaTipos: [],
       dialog: false,
       logDialog: false,
       form: emptyForm(),
       logForm: emptyLogForm(),
       selectedDenuncia: null,
+      personalSeleccionadoOption: null,
+      buscandoPersonal: false,
+      personalSearchSeq: 0,
+      personalFiltro: '',
+      personalOptions: [],
       mascotaOptions: [],
       mascotaSeleccionadaOption: null,
       buscandoMascota: false,
@@ -593,6 +638,7 @@ export default {
         { name: 'mascota', label: 'Mascota', field: 'mascota', align: 'left' },
         { name: 'tipos', label: 'Tipos', field: 'tipos', align: 'left' },
         { name: 'estado', label: 'Estado', field: 'estado', align: 'left' },
+        { name: 'ultimo_log', label: 'Ultimo log', field: 'last_log_at', align: 'left', sortable: true },
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ],
       logColumns: [
@@ -678,7 +724,7 @@ export default {
           label: `${proceso.orden}. ${proceso.descripcion}`,
           value: proceso.id
         }))
-    }
+    },
   },
   created () {
     if (!this.store.isLoggedIn) {
@@ -724,6 +770,10 @@ export default {
       await this.loadInitialData()
     },
     openCreate () {
+      if (!this.store.bool_denuncia) {
+        return
+      }
+
       this.form = emptyForm()
       this.personaSeleccionadaForm = null
       this.mascotaOptions = []
@@ -732,6 +782,10 @@ export default {
       this.dialog = true
     },
     async save () {
+      if (!this.store.bool_denuncia) {
+        return
+      }
+
       this.saving = true
       try {
         await this.buscarPersonaPorDocumento()
@@ -909,20 +963,28 @@ export default {
       }
     },
     openLogDialog (row) {
+      if (!this.store.bool_denuncia) {
+        return
+      }
+
       this.selectedDenuncia = row
       const nextProcess = this.nextProcessOptions[0] || null
 
       this.logForm = {
         proceso_id: nextProcess?.id || null,
-        actividad: nextProcess ? nextProcess.descripcion : '',
-        resultado: nextProcess ? nextProcess.descripcion : '',
+        personal_id: null,
+        actividad:  '',
+        resultado:  '',
         obser: ''
       }
+      this.personalSeleccionadoOption = null
+      this.personalOptions = []
+      this.personalFiltro = ''
 
       this.logDialog = true
     },
     async saveLog () {
-      if (!this.selectedDenuncia) {
+      if (!this.store.bool_denuncia || !this.selectedDenuncia) {
         return
       }
 
@@ -946,6 +1008,66 @@ export default {
       } finally {
         this.savingLog = false
       }
+    },
+    async buscarPersonals (val, update, abort) {
+      const term = String(val || '').trim()
+
+      if (!term) {
+        update(() => {
+          this.personalOptions = this.personalSeleccionadoOption ? [this.personalSeleccionadoOption] : []
+        })
+        return
+      }
+
+      const currentSeq = (this.personalSearchSeq || 0) + 1
+      this.personalSearchSeq = currentSeq
+
+      try {
+        this.buscandoPersonal = true
+        const { data } = await this.$api.get('personal', {
+          params: {
+            q: term,
+            limit: 20
+          }
+        })
+
+        if (currentSeq !== this.personalSearchSeq) {
+          abort()
+          return
+        }
+
+        const personals = Array.isArray(data) ? data : []
+        update(() => {
+          const options = personals.map(personal => ({
+            ...personal,
+            label: `${personal.cedula || 'SIN CEDULA'} - ${personal.nombre || 'SIN NOMBRE'}`,
+            value: personal.id
+          }))
+
+          if (this.personalSeleccionadoOption && !options.some(item => Number(item.value) === Number(this.logForm.personal_id))) {
+            options.unshift(this.personalSeleccionadoOption)
+          }
+
+          this.personalOptions = options
+        })
+      } catch (error) {
+        if (currentSeq === this.personalSearchSeq) {
+          update(() => {
+            this.personalOptions = this.personalSeleccionadoOption ? [this.personalSeleccionadoOption] : []
+          })
+          this.notifyError(error, 'No se pudo buscar el personal.')
+        } else {
+          abort()
+        }
+      } finally {
+        if (currentSeq === this.personalSearchSeq) {
+          this.buscandoPersonal = false
+        }
+      }
+    },
+    syncPersonal (personalId) {
+      const personal = this.personalOptions.find(item => Number(item.value) === Number(personalId))
+      this.personalSeleccionadoOption = personal || null
     },
     canAdvance (row) {
       return this.currentProcessOrder(row) < this.procesos.length
@@ -991,6 +1113,9 @@ export default {
         return 'secondary'
       }
       return 'primary'
+    },
+    denunciaColor (row) {
+      return row?.current_log?.proceso?.color || this.estadoColor(row?.estado)
     },
     formatDateTime (value) {
       return value ? moment(value).format('DD/MM/YYYY HH:mm') : '-'

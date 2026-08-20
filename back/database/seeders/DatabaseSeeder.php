@@ -73,10 +73,19 @@ class DatabaseSeeder extends Seeder
             ['rol_id' => 1, 'permiso_id' => 39],
             ['rol_id' => 1, 'permiso_id' => 40],
             ['rol_id' => 1, 'permiso_id' => 41],
+            ['rol_id' => 1, 'permiso_id' => 46],
             ['rol_id' => 1, 'permiso_id' => 42],
             ['rol_id' => 1, 'permiso_id' => 43],
             ['rol_id' => 1, 'permiso_id' => 44],
             ['rol_id' => 1, 'permiso_id' => 45],
+            ['rol_id' => 1, 'permiso_id' => 47],
+            ['rol_id' => 1, 'permiso_id' => 48],
+            ['rol_id' => 1, 'permiso_id' => 49],
+            ['rol_id' => 1, 'permiso_id' => 50],
+            ['rol_id' => 1, 'permiso_id' => 51],
+            ['rol_id' => 1, 'permiso_id' => 52],
+            ['rol_id' => 1, 'permiso_id' => 53],
+            ['rol_id' => 1, 'permiso_id' => 54],
         ]);
 
         $this->call([

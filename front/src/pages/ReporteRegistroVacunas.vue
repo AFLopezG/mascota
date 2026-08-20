@@ -8,6 +8,7 @@
       >
         <template #actions>
           <q-btn outline color="primary" icon="sym_r_refresh" label="Actualizar" :loading="loading" @click="loadReport" />
+          <q-btn outline color="secondary" icon="sym_r_picture_as_pdf" label="Descargar PDF" :loading="pdfLoading" @click="downloadPdf" />
           <q-btn color="primary" icon="sym_r_search" label="Consultar" :loading="loading" @click="loadReport" />
         </template>
       </AppSectionHeader>
@@ -229,6 +230,7 @@ export default {
     return {
       store: globalStore(),
       loading: false,
+      pdfLoading: false,
       rows: [],
       summary: {
         total: 0,
@@ -298,7 +300,7 @@ export default {
       return
     }
 
-    if (!this.store.bool_registro_vacunas) {
+    if (!this.store.bool_reporte_registro_vacunas) {
       this.$router.push('/home')
       return
     }
@@ -334,6 +336,34 @@ export default {
         this.notifyError(error, 'No se pudo cargar el reporte de vacunas.')
       } finally {
         this.loading = false
+      }
+    },
+    async downloadPdf () {
+      this.pdfLoading = true
+      try {
+        const response = await this.$api.get('registro-vacuna/reporte/pdf', {
+          params: this.filters,
+          responseType: 'blob'
+        })
+
+        const blob = new Blob([response.data], {
+          type: response.headers?.['content-type'] || 'application/pdf'
+        })
+        const objectUrl = window.URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        const from = this.filters.fecha_desde ? String(this.filters.fecha_desde).replaceAll('-', '') : 'inicio'
+        const to = this.filters.fecha_hasta ? String(this.filters.fecha_hasta).replaceAll('-', '') : 'fin'
+
+        anchor.href = objectUrl
+        anchor.download = `reporte-vacunas-${from}-a-${to}.pdf`
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000)
+      } catch (error) {
+        this.notifyError(error, 'No se pudo descargar el reporte PDF.')
+      } finally {
+        this.pdfLoading = false
       }
     },
     formatDateTime (value) {

@@ -17,6 +17,8 @@ use App\Http\Controllers\ProcesoController;
 use App\Http\Controllers\RegistroVacunaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VacunaController;
+use App\Http\Controllers\PersonalController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login',[\App\Http\Controllers\UserController::class,'login'])->name('login');
@@ -36,7 +38,6 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::get('/raza', [RazaController::class, 'index']);
     Route::get('/campania-tipo', [CampaniaTipoController::class, 'index']);
     Route::get('/campania', [CampaniaController::class, 'index']);
-    Route::get('/proceso', [ProcesoController::class, 'index']);
     Route::get('/denuncia/reporte', [DenunciaController::class, 'reporte']);
     Route::post('/denuncia/{denuncia}/logs', [DenunciaController::class, 'storeLog']);
     Route::post('/campania', [CampaniaController::class, 'store']);
@@ -60,14 +61,17 @@ Route::group(['middleware'=>'auth:sanctum'],function (){
     Route::resource('/rol',\App\Http\Controllers\RolController::class);
     Route::resource('/permiso',\App\Http\Controllers\PermisoController::class);
     Route::resource('/persona', PersonaController::class);
+    Route::resource('/personal', PersonalController::class);
     Route::resource('/place', PlaceController::class);
     Route::resource('/health-center', HealthCenterController::class);
     Route::get('/registro-vacuna/reporte', [RegistroVacunaController::class, 'reporte']);
+    Route::get('/registro-vacuna/reporte/pdf', [RegistroVacunaController::class, 'reportePdf']);
     Route::get('/registro-vacuna/{registroVacuna}/foto', [RegistroVacunaController::class, 'foto'])->whereNumber('registroVacuna');
     Route::resource('/registro-vacuna', RegistroVacunaController::class);
     Route::put('/registro-vacuna/{registroVacuna}/anular', [RegistroVacunaController::class, 'anular']);
     Route::post('/mascota/{mascota}/foto', [MascotaController::class, 'updateFoto']);
     Route::post('/mascota/{mascota}/fallecimiento', [MascotaController::class, 'updateFallecimiento']);
+    Route::resource('/proceso', ProcesoController::class);
     Route::resource('/mascota', MascotaController::class);
     Route::resource('/vacuna', VacunaController::class);
     Route::resource('/denuncia', DenunciaController::class);

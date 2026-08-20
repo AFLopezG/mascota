@@ -54,10 +54,19 @@ class PermisoSeeder extends Seeder
             ['id' => 39, 'nombre' => 'Eliminar Lugares', 'permiso_id' => 36],
             ['id' => 40, 'nombre' => 'Ver Registro Vacunas', 'permiso_id' => null],
             ['id' => 41, 'nombre' => 'Registrar Registro Vacunas', 'permiso_id' => 40],
+            ['id' => 46, 'nombre' => 'Reporte Registro Vacunas', 'permiso_id' => 40],
             ['id' => 42, 'nombre' => 'Ver Centros de Salud', 'permiso_id' => null],
             ['id' => 43, 'nombre' => 'Registrar Centros de Salud', 'permiso_id' => 42],
             ['id' => 44, 'nombre' => 'Modificar Centros de Salud', 'permiso_id' => 42],
             ['id' => 45, 'nombre' => 'Eliminar Centros de Salud', 'permiso_id' => 42],
+            ['id' => 47, 'nombre' => 'Ver Personals', 'permiso_id' => null],
+            ['id' => 48, 'nombre' => 'Registrar Personals', 'permiso_id' => 47],
+            ['id' => 49, 'nombre' => 'Modificar Personals', 'permiso_id' => 47],
+            ['id' => 50, 'nombre' => 'Eliminar Personals', 'permiso_id' => 47],
+            ['id' => 51, 'nombre' => 'Ver Procesos', 'permiso_id' => null],
+            ['id' => 52, 'nombre' => 'Registrar Procesos', 'permiso_id' => 51],
+            ['id' => 53, 'nombre' => 'Modificar Procesos', 'permiso_id' => 51],
+            ['id' => 54, 'nombre' => 'Eliminar Procesos', 'permiso_id' => 51],
         ]);
     }
 }

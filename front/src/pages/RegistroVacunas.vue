@@ -313,7 +313,6 @@ export default {
         fecha_hasta: moment().format('YYYY-MM-DD')
       },
       campanias: [],
-      places: [],
       especies: [],
       razas: [],
       razaFilter: '',
@@ -340,12 +339,6 @@ export default {
       return this.campanias.map(campania => ({
         label: `${campania.nombre}${campania.fec_ini ? ` (${moment(campania.fec_ini).format('DD/MM/YYYY')})` : ''}`,
         value: campania.id
-      }))
-    },
-    placeOptions () {
-      return this.places.map(place => ({
-        label: place.nombre,
-        value: place.id
       }))
     },
     especieOptions () {
@@ -395,15 +388,13 @@ export default {
     },
     async loadCatalogs () {
       try {
-        const [campaniasRes, placesRes, especiesRes, razasRes] = await Promise.all([
+        const [campaniasRes, especiesRes, razasRes] = await Promise.all([
           this.$api.get('campania', { params: { vigentes: 1, vacunacion: 1 } }),
-          this.$api.get('place'),
           this.$api.get('especie'),
           this.$api.get('raza')
         ])
 
         this.campanias = Array.isArray(campaniasRes.data) ? campaniasRes.data : []
-        this.places = Array.isArray(placesRes.data) ? placesRes.data : []
         this.especies = Array.isArray(especiesRes.data) ? especiesRes.data : []
         this.razas = Array.isArray(razasRes.data) ? razasRes.data : []
       } catch (error) {
@@ -463,8 +454,7 @@ export default {
     },
     openDialog () {
       const defaultCampaniaId = this.campanias[0]?.id ?? null
-      const defaultPlaceId = this.places[0]?.id ?? null
-      this.form = defaultForm(defaultCampaniaId, defaultPlaceId)
+      this.form = defaultForm(defaultCampaniaId)
       this.cameraError = ''
       this.dialog = true
       this.loadCurrentLocation()
@@ -477,7 +467,7 @@ export default {
       if (this.form.foto_preview_url) {
         URL.revokeObjectURL(this.form.foto_preview_url)
       }
-      this.form = defaultForm(this.campanias[0]?.id ?? null, this.places[0]?.id ?? null)
+      this.form = defaultForm(this.campanias[0]?.id ?? null)
     },
     async loadCurrentLocation () {
       if (!navigator.geolocation) {
