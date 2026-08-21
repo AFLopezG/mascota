@@ -14,7 +14,7 @@ class DenunciaLog extends Model
     protected $table = 'logs';
 
     protected $fillable = [
-        'fechaHora',
+        'fecha_hora',
         'actividad',
         'resultado',
         'obser',
@@ -26,7 +26,7 @@ class DenunciaLog extends Model
     ];
 
     protected $casts = [
-        'fechaHora' => 'datetime',
+        'fecha_hora' => 'datetime',
     ];
 
     public function denuncia(): BelongsTo

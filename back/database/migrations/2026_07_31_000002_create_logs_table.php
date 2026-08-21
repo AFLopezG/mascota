@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('logs', function (Blueprint $table) {
             $table->id();
-            $table->dateTime('fechaHora');
+            $table->dateTime('fecha_hora');
             $table->string('actividad');
             $table->string('resultado');
             $table->text('obser')->nullable();

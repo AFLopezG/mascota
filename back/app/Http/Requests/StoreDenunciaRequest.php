@@ -23,7 +23,7 @@ class StoreDenunciaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fec_denuncia' => ['required', 'date'],
+            'fec_denuncia' => ['nullable', 'date'],
             'persona_id' => ['nullable', 'integer', 'exists:personas,id'],
             'persona_cinit' => ['required_without:persona_id', 'nullable', 'string', 'max:255'],
             'persona_complemento' => ['nullable', 'string', 'max:255'],

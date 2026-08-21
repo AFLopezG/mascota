@@ -99,14 +99,16 @@
       </q-card>
     </div>
 
-    <q-dialog v-model="fotoDialog" persistent @hide="closeFotoDialog">
+    <q-dialog v-model="fotoDialog" persistent :maximized="$q.screen.lt.sm" @hide="closeFotoDialog">
       <q-card class="app-soft-card foto-dialog-card">
-        <q-card-section class="bg-primary text-white row items-center justify-between">
-          <div>
+        <q-card-section class="bg-primary text-white row items-center justify-between q-col-gutter-sm dialog-card-vacuna__topbar">
+          <div class="col-12 col-sm">
             <div class="text-h6">Foto del registro</div>
             <div class="text-caption text-white-7">{{ fotoDialogTitle }}</div>
           </div>
-          <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
+          <div class="col-12 col-sm-auto dialog-card-vacuna__close">
+            <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
+          </div>
         </q-card-section>
 
         <q-card-section class="foto-dialog-card__body">
@@ -123,7 +125,7 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="dialog" persistent full-width @hide="closeDialog">
+    <q-dialog v-model="dialog" persistent full-width :maximized="$q.screen.lt.sm" @hide="closeDialog">
       <q-card class="app-soft-card dialog-card-vacuna">
         <q-card-section class="bg-primary text-white row items-center justify-between">
           <div>
@@ -133,7 +135,7 @@
           <q-btn flat round icon="sym_r_close" color="white" v-close-popup />
         </q-card-section>
 
-        <q-card-section>
+        <q-card-section class="dialog-card-vacuna__content">
           <q-form class="q-gutter-lg" @submit.prevent="save">
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-4">
@@ -152,10 +154,24 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <q-input v-model="form.cedula" label="Carnet de Identidad" outlined dense />
+                <q-input
+                  v-model="form.cedula"
+                  :label="$requiredLabel('Carnet de Identidad')"
+                  outlined
+                  dense
+                  lazy-rules
+                  :rules="[val => !!String(val || '').trim() || 'Ingrese el carnet de identidad']"
+                />
               </div>
               <div class="col-12 col-md-4">
-                <q-input v-model="form.nombre" label="Nombre Responsable" outlined dense />
+                <q-input
+                  v-model="form.nombre"
+                  :label="$requiredLabel('Nombre Responsable')"
+                  outlined
+                  dense
+                  lazy-rules
+                  :rules="[val => !!String(val || '').trim() || 'Ingrese el nombre del responsable']"
+                />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="form.celular" label="Celular" outlined dense />
@@ -164,7 +180,14 @@
                 <q-input v-model="form.domicilio" label="Domicilio" outlined dense />
               </div>
               <div class="col-12 col-md-6">
-                <q-input v-model="form.nombre_mascota" label="Nombre de mascota" outlined dense />
+                <q-input
+                  v-model="form.nombre_mascota"
+                  :label="$requiredLabel('Nombre de mascota')"
+                  outlined
+                  dense
+                  lazy-rules
+                  :rules="[val => !!String(val || '').trim() || 'Ingrese el nombre de la mascota']"
+                />
               </div>
 
               <div class="col-12 col-md-4">
@@ -190,13 +213,15 @@
                   option-value="value"
                   emit-value
                   map-options
-                  label="Raza"
+                  :label="$requiredLabel('Raza')"
                   outlined
                   dense
                   use-input
                   input-debounce="0"
                   clearable
                   :disable="!form.especie_id"
+                  lazy-rules
+                  :rules="[val => !!val || 'Seleccione una raza']"
                   @filter="filterRazas"
                   @update:model-value="syncRaza"
                 />
@@ -219,7 +244,7 @@
                   <div class="text-subtitle1 text-weight-bold">Fotografía</div>
                   <div class="text-caption text-grey-7">Usa cámara o carga un archivo. La imagen se ve antes de guardar.</div>
                 </div>
-                <div class="row q-gutter-sm">
+                <div class="row q-gutter-sm dialog-card-vacuna__camera-actions">
                   <q-btn outline color="primary" icon="sym_r_photo_camera" label="Abrir cámara" @click="startCamera" />
                   <q-btn outline color="secondary" icon="sym_r_refresh" label="Repetir captura" :disable="!form.foto_preview_url" @click="retakePhoto" />
                   <q-btn outline color="negative" label="Detener" :disable="!cameraActive" @click="stopCamera" />
@@ -254,7 +279,7 @@
               </div>
             </q-card>
 
-            <div class="row justify-end q-gutter-sm">
+            <div class="row justify-end q-gutter-sm dialog-card-vacuna__footer">
               <q-btn flat label="Cancelar" color="negative" v-close-popup />
               <q-btn color="positive" icon="sym_r_save" label="Guardar registro" type="submit" :loading="saving" />
             </div>
@@ -715,6 +740,24 @@ export default {
   max-width: 1280px;
 }
 
+.dialog-card-vacuna__topbar {
+  align-items: flex-start;
+}
+
+.dialog-card-vacuna__close {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dialog-card-vacuna__content {
+  overflow-x: hidden;
+}
+
+.dialog-card-vacuna__camera-actions,
+.dialog-card-vacuna__footer {
+  flex-wrap: wrap;
+}
+
 .foto-dialog-card {
   width: 92vw;
   max-width: 920px;
@@ -775,9 +818,40 @@ export default {
     max-width: 100vw;
   }
 
+  .dialog-card-vacuna__topbar,
+  .dialog-card-vacuna__content {
+    padding: 16px;
+  }
+
+  .dialog-card-vacuna__camera-actions,
+  .dialog-card-vacuna__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dialog-card-vacuna__camera-actions .q-btn,
+  .dialog-card-vacuna__footer .q-btn {
+    width: 100%;
+  }
+
+  .dialog-card-vacuna__close {
+    justify-content: flex-start;
+  }
+
   .foto-dialog-card {
     width: 100vw;
     max-width: 100vw;
+  }
+
+  .foto-dialog-card__body {
+    min-height: 240px;
+    padding: 16px;
+  }
+
+  .camera-frame,
+  .camera-frame__video,
+  .camera-frame__image {
+    min-height: 220px;
   }
 }
 </style>

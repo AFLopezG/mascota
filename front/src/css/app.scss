@@ -51,6 +51,8 @@ a {
 
 .app-page {
   padding: 24px;
+  width: 100%;
+  min-width: 0;
 }
 
 .app-shell {
@@ -120,6 +122,7 @@ a {
 
 .app-page-container {
   padding-top: 18px;
+  min-width: 0;
 }
 
 .login-shell {
@@ -249,6 +252,11 @@ body.body--dark .app-metric-card__icon {
   overflow: hidden;
 }
 
+.app-table .q-table__middle {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .app-table .q-table__top,
 .app-table .q-table__bottom {
   background: transparent;
@@ -332,6 +340,20 @@ body.body--dark .app-metric-card__icon {
     padding: 12px;
   }
 
+  .app-shell__toolbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .app-shell__brand {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .app-shell__brand .column {
+    min-width: 0;
+  }
+
   .app-page > .q-card,
   .app-shell-card,
   .app-surface,
@@ -361,6 +383,19 @@ body.body--dark .app-metric-card__icon {
 
   .app-calendar-frame .q-date {
     min-width: 300px;
+  }
+
+  .q-dialog__inner {
+    padding: 8px;
+  }
+
+  .q-dialog__inner > .q-card,
+  .q-dialog__inner > .app-login-card {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    max-height: calc(100vh - 16px);
+    overflow: auto;
   }
 }
 

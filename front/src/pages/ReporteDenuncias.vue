@@ -3,7 +3,7 @@
     <div class="column q-gutter-lg">
       <AppSectionHeader
         title="Reporte de denuncias"
-        subtitle="Consulta denuncias por rango de fechas y tipo, con log actual e historial completo."
+        subtitle="Consulta denuncias por rango de fechas del ultimo log, tipo y personal, con log actual e historial completo."
         icon="sym_r_assessment"
       >
         <template #actions>
@@ -21,7 +21,7 @@
             <div class="col-12 col-md-3">
               <q-input v-model="filters.fecha_hasta" type="date" label="Fecha hasta" outlined dense />
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <q-select
                 v-model="filters.denuncia_tipo_id"
                 :options="denunciaTipoOptions"
@@ -33,6 +33,23 @@
                 outlined
                 dense
                 clearable
+              />
+            </div>
+            <div class="col-12 col-md-3">
+              <q-select
+                v-model="filters.personal_id"
+                :options="personalOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                label="Personal asignado"
+                outlined
+                dense
+                clearable
+                use-input
+                input-debounce="300"
+                @filter="filterPersonals"
               />
             </div>
             <div class="col-12 col-md-2">
@@ -81,6 +98,12 @@
                   </q-td>
                 </template>
 
+                <template #body-cell-codigo="props">
+                  <q-td :props="props">
+                    {{ props.row.codigo || '-' }}
+                  </q-td>
+                </template>
+
                 <template #body-cell-persona="props">
                   <q-td :props="props">
                     {{ personaNombre(props.row.persona) }}
@@ -123,7 +146,7 @@
                         {{ props.row.current_log?.proceso?.descripcion || props.row.current_log?.actividad || '-' }}
                       </span>
                       <span class="text-caption text-grey-7">
-                        {{ formatDateTime(props.row.current_log?.fechaHora) }}
+                        {{ formatDateTime(props.row.current_log?.fecha_hora) }}
                       </span>
                     </div>
                   </q-td>
@@ -154,7 +177,7 @@
                 <div>
                   <div class="text-h6">Detalle del reporte</div>
                   <div class="text-caption text-white-7">
-                    Denuncia #{{ selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
+                    Denuncia {{ selectedDenuncia.codigo || selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
                   </div>
                 </div>
                 <q-badge :color="denunciaColor(selectedDenuncia)" text-color="white" rounded>
@@ -166,10 +189,10 @@
             <q-card-section class="q-gutter-md">
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-md-4">
-                  <q-input :model-value="selectedDenuncia.numero" label="Numero" dense outlined readonly />
+                  <q-input :model-value="selectedDenuncia.codigo" label="Codigo" dense outlined readonly />
                 </div>
-                <div class="col-12 col-md-8">
-                  <q-input :model-value="formatDateTime(selectedDenuncia.fec_denuncia)" label="Fecha registro" dense outlined readonly />
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="selectedDenuncia.numero" label="Numero" dense outlined readonly />
                 </div>
                 <div class="col-12">
                   <q-input :model-value="personaNombre(selectedDenuncia.persona)" label="Persona" dense outlined readonly />
@@ -202,7 +225,7 @@
                       <q-input :model-value="selectedCurrentLogProceso" label="Proceso" dense outlined readonly />
                     </div>
                     <div class="col-12 col-md-6">
-                      <q-input :model-value="formatDateTime(selectedCurrentLog?.fechaHora)" label="Fecha" dense outlined readonly />
+                      <q-input :model-value="formatDateTime(selectedCurrentLog?.fecha_hora)" label="Fecha" dense outlined readonly />
                     </div>
                     <div class="col-12">
                       <q-input :model-value="selectedCurrentLog?.actividad || '-'" label="Actividad" dense outlined readonly />
@@ -240,7 +263,7 @@
               >
                 <template #body-cell-fecha="props">
                   <q-td :props="props">
-                    {{ formatDateTime(props.row.fechaHora) }}
+                    {{ formatDateTime(props.row.fecha_hora) }}
                   </q-td>
                 </template>
 
@@ -289,13 +312,17 @@ export default {
       loading: false,
       rows: [],
       denunciaTipos: [],
+      personals: [],
+      personalFiltro: '',
       selectedDenuncia: null,
       filters: {
         fecha_desde: hoy.clone().startOf('month').format('YYYY-MM-DD'),
         fecha_hasta: hoy.format('YYYY-MM-DD'),
-        denuncia_tipo_id: null
+        denuncia_tipo_id: null,
+        personal_id: null
       },
       columns: [
+        { name: 'codigo', label: 'Codigo', field: 'codigo', align: 'left', sortable: true },
         { name: 'numero', label: 'Nro', field: 'numero', align: 'left', sortable: true },
         { name: 'fecha', label: 'Fecha', field: 'fec_denuncia', align: 'left', sortable: true },
         { name: 'persona', label: 'Persona', field: 'persona', align: 'left' },
@@ -307,7 +334,7 @@ export default {
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ],
       logColumns: [
-        { name: 'fecha', label: 'Fecha', field: 'fechaHora', align: 'left' },
+        { name: 'fecha', label: 'Fecha', field: 'fecha_hora', align: 'left' },
         { name: 'proceso', label: 'Proceso', field: 'proceso', align: 'left' },
         { name: 'actividad', label: 'Actividad', field: 'actividad', align: 'left' },
         { name: 'resultado', label: 'Resultado', field: 'resultado', align: 'left' },
@@ -325,6 +352,27 @@ export default {
           value: tipo.id
         }))
       ]
+    },
+    personalOptions () {
+      const term = this.normalizeText(this.personalFiltro)
+
+      return this.personals
+        .filter(personal => {
+          if (!term) {
+            return true
+          }
+
+          return [
+            personal.cedula,
+            personal.nombre,
+            personal.celular
+          ].some(value => this.normalizeText(value).includes(term))
+        })
+        .map(personal => ({
+          ...personal,
+          label: `${personal.cedula || 'SIN CEDULA'} - ${personal.nombre || 'SIN NOMBRE'}`,
+          value: personal.id
+        }))
     },
     totalLogs () {
       return this.rows.reduce((total, row) => {
@@ -357,7 +405,8 @@ export default {
       this.filters = {
         fecha_desde: hoy.clone().startOf('month').format('YYYY-MM-DD'),
         fecha_hasta: hoy.format('YYYY-MM-DD'),
-        denuncia_tipo_id: null
+        denuncia_tipo_id: null,
+        personal_id: null
       }
 
       this.loadReport()
@@ -365,12 +414,14 @@ export default {
     async loadReport () {
       this.loading = true
       try {
-        const [reportRes, tiposRes] = await Promise.all([
+        const [reportRes, tiposRes, personalsRes] = await Promise.all([
           this.$api.get('denuncia/reporte', { params: this.filters }),
-          this.$api.get('denuncia-tipo')
+          this.$api.get('denuncia-tipo'),
+          this.$api.get('personal')
         ])
 
         this.denunciaTipos = Array.isArray(tiposRes.data) ? tiposRes.data : []
+        this.personals = Array.isArray(personalsRes.data) ? personalsRes.data : []
         this.rows = Array.isArray(reportRes.data?.data) ? reportRes.data.data : []
 
         if (this.rows.length) {
@@ -387,6 +438,10 @@ export default {
     },
     selectDenuncia (_evt, row) {
       this.selectedDenuncia = row
+    },
+    filterPersonals (val, update) {
+      this.personalFiltro = val || ''
+      update(() => {})
     },
     personaNombre (persona) {
       if (!persona) {

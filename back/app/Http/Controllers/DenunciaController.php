@@ -23,6 +23,7 @@ class DenunciaController extends Controller
             'fecha_desde' => ['nullable', 'date'],
             'fecha_hasta' => ['nullable', 'date'],
             'denuncia_tipo_id' => ['nullable', 'integer', 'exists:denuncia_tipos,id'],
+            'personal_id' => ['nullable', 'integer', 'exists:personals,id'],
         ]);
 
         $query = Denuncia::query()
@@ -34,21 +35,36 @@ class DenunciaController extends Controller
                 'user',
                 'tipos',
                 'logs' => function ($relation) {
-                    $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
+                    $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fecha_hora');
                 },
             ]);
 
-        if (!empty($data['fecha_desde'])) {
-            $query->whereDate('fec_denuncia', '>=', $data['fecha_desde']);
-        }
-
-        if (!empty($data['fecha_hasta'])) {
-            $query->whereDate('fec_denuncia', '<=', $data['fecha_hasta']);
-        }
-
         if (!empty($data['denuncia_tipo_id'])) {
             $query->whereHas('tipos', function ($relation) use ($data) {
-                $relation->where('denuncia_tipos.id', $data['denuncia_tipo_id']);
+                $relation->whereKey((int) $data['denuncia_tipo_id']);
+            });
+        }
+
+        if (!empty($data['personal_id'])) {
+            $query->whereHas('logs', function ($relation) use ($data) {
+                $relation->where('personal_id', (int) $data['personal_id']);
+            });
+        }
+
+        if (!empty($data['fecha_desde']) || !empty($data['fecha_hasta'])) {
+            $query->whereExists(function ($subQuery) use ($data) {
+                $subQuery->selectRaw('1')
+                    ->from('logs as l')
+                    ->whereColumn('l.denuncia_id', 'denuncias.id')
+                    ->whereRaw('l.fecha_hora = (select max(l2.fecha_hora) from logs as l2 where l2.denuncia_id = denuncias.id)');
+
+                if (!empty($data['fecha_desde'])) {
+                    $subQuery->whereDate('l.fecha_hora', '>=', $data['fecha_desde']);
+                }
+
+                if (!empty($data['fecha_hasta'])) {
+                    $subQuery->whereDate('l.fecha_hora', '<=', $data['fecha_hasta']);
+                }
             });
         }
 
@@ -64,6 +80,7 @@ class DenunciaController extends Controller
                 'fecha_desde' => $data['fecha_desde'] ?? null,
                 'fecha_hasta' => $data['fecha_hasta'] ?? null,
                 'denuncia_tipo_id' => $data['denuncia_tipo_id'] ?? null,
+                'personal_id' => $data['personal_id'] ?? null,
             ],
         ]);
     }
@@ -80,7 +97,7 @@ class DenunciaController extends Controller
             'user',
             'tipos',
             'logs' => function ($relation) {
-                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
+                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fecha_hora');
             },
         ])
             ->get()
@@ -97,12 +114,15 @@ class DenunciaController extends Controller
         $data = $request->validated();
 
         return DB::transaction(function () use ($data, $request) {
+            $data['fec_denuncia'] = now();
             $persona = $this->resolvePersona($data);
             $data['persona_id'] = $persona->id;
+            $numero = $this->nextNumeroForGestion($data['fec_denuncia']);
 
             $denuncia = new Denuncia();
             $denuncia->fill($this->mapDenunciaData($data));
-            $denuncia->numero = ((int) Denuncia::max('numero')) + 1;
+            $denuncia->numero = $numero;
+            $denuncia->codigo = $this->buildCodigo($data['fec_denuncia'], $numero);
             $denuncia->user_id = $request->user()->id;
             $denuncia->save();
 
@@ -114,7 +134,7 @@ class DenunciaController extends Controller
             $denuncia->save();
 
             DenunciaLog::create([
-                'fechaHora' => now(),
+                'fecha_hora' => now(),
                 'actividad' => 'DENUNCIA REGISTRADA',
                 'resultado' => $firstProcess->descripcion,
                 'obser' => 'Registro inicial de denuncia',
@@ -195,7 +215,7 @@ class DenunciaController extends Controller
         }
 
         DenunciaLog::create([
-            'fechaHora' => now(),
+            'fecha_hora' => now(),
             'actividad' => mb_strtoupper(trim($data['actividad'])),
             'resultado' => mb_strtoupper(trim($data['resultado'])),
             'obser' => $data['obser'] ? trim($data['obser']) : null,
@@ -296,14 +316,14 @@ class DenunciaController extends Controller
             'user',
             'tipos',
             'logs' => function ($relation) {
-                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fechaHora');
+                $relation->with(['proceso', 'user', 'personal'])->orderByDesc('fecha_hora');
             },
         ]);
     }
 
     private function currentProcessOrder(Denuncia $denuncia): int
     {
-        $lastLog = $denuncia->logs()->with('proceso')->orderByDesc('fechaHora')->first();
+        $lastLog = $denuncia->logs()->with('proceso')->orderByDesc('fecha_hora')->first();
 
         return (int) ($lastLog?->proceso?->orden ?? 0);
     }
@@ -373,7 +393,7 @@ class DenunciaController extends Controller
     private function formatDenuncia(Denuncia $denuncia): array
     {
         $logs = $denuncia->logs
-            ->sortByDesc(fn (DenunciaLog $log) => $log->fechaHora?->timestamp ?? 0)
+            ->sortByDesc(fn (DenunciaLog $log) => $log->fecha_hora?->timestamp ?? 0)
             ->values();
         $currentLog = $logs->first();
         $currentOrder = $this->currentProcessOrderFromLogs($logs);
@@ -381,6 +401,7 @@ class DenunciaController extends Controller
 
         return [
             'id' => $denuncia->id,
+            'codigo' => $denuncia->codigo,
             'numero' => $denuncia->numero,
             'fec_denuncia' => $denuncia->fec_denuncia,
             'direccion' => $denuncia->direccion,
@@ -406,7 +427,7 @@ class DenunciaController extends Controller
             'tipos' => $denuncia->tipos,
             'logs' => $logs,
             'current_log' => $currentLog,
-            'last_log_at' => $currentLog?->fechaHora,
+            'last_log_at' => $currentLog?->fecha_hora,
             'current_process_order' => $currentOrder,
             'is_finished' => $maxOrder > 0 ? $currentOrder >= $maxOrder : false,
         ];
@@ -439,5 +460,21 @@ class DenunciaController extends Controller
         }
 
         return $uppercase ? mb_strtoupper($value) : $value;
+    }
+
+    private function nextNumeroForGestion($fecDenuncia): int
+    {
+        $gestion = (int) $fecDenuncia->year;
+        $lastNumero = Denuncia::query()
+            ->whereYear('fec_denuncia', $gestion)
+            ->lockForUpdate()
+            ->max('numero');
+
+        return ((int) $lastNumero) + 1;
+    }
+
+    private function buildCodigo($fecDenuncia, int $numero): string
+    {
+        return $fecDenuncia->year . '-' . $numero;
     }
 }

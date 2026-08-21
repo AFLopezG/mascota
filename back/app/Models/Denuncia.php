@@ -13,6 +13,7 @@ class Denuncia extends Model
     use HasFactory;
 
     protected $fillable = [
+        'codigo',
         'numero',
         'fec_denuncia',
         'direccion',

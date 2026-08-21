@@ -1,7 +1,7 @@
 <template>
   <q-card flat bordered class="app-section-header">
-    <q-card-section class="row items-start justify-between q-col-gutter-md">
-      <div class="col-auto">
+    <q-card-section class="row items-start justify-between q-col-gutter-md app-section-header__content">
+      <div class="col-12 col-md">
         <div class="row items-center q-gutter-sm">
           <q-avatar rounded size="42px" class="app-section-header__icon">
             <q-icon :name="icon" size="22px" />
@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="col-12 col-md-auto">
-        <div class="row justify-end q-gutter-sm">
+        <div class="row justify-start justify-md-end q-gutter-sm app-section-header__actions">
           <slot name="actions" />
         </div>
       </div>
@@ -37,3 +37,23 @@ defineProps({
   }
 })
 </script>
+
+<style scoped>
+.app-section-header__content {
+  width: 100%;
+}
+
+.app-section-header__actions {
+  width: 100%;
+}
+
+@media (max-width: 599px) {
+  .app-section-header__actions {
+    justify-content: stretch;
+  }
+
+  .app-section-header__actions :deep(.q-btn) {
+    width: 100%;
+  }
+}
+</style>

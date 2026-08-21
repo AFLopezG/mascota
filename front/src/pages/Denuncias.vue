@@ -37,6 +37,12 @@
                   </q-td>
                 </template>
 
+                <template #body-cell-codigo="props">
+                  <q-td :props="props">
+                    {{ props.row.codigo || '-' }}
+                  </q-td>
+                </template>
+
                 <template #body-cell-persona="props">
                   <q-td :props="props">
                     {{ personaNombre(props.row.persona) }}
@@ -111,7 +117,7 @@
                 <div>
                   <div class="text-h6">Detalle de denuncia</div>
                   <div class="text-caption text-white-7">
-                    {{ selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
+                    {{ selectedDenuncia.codigo || selectedDenuncia.numero }} - {{ personaNombre(selectedDenuncia.persona) }}
                   </div>
                 </div>
                 <q-badge :color="denunciaColor(selectedDenuncia)" text-color="white" rounded>
@@ -123,10 +129,10 @@
             <q-card-section class="q-gutter-md">
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-md-4">
-                  <q-input :model-value="selectedDenuncia.numero" label="Numero" dense outlined readonly />
+                  <q-input :model-value="selectedDenuncia.codigo" label="Codigo" dense outlined readonly />
                 </div>
-                <div class="col-12 col-md-8">
-                  <q-input :model-value="formatDateTime(selectedDenuncia.fec_denuncia)" label="Fecha" dense outlined readonly />
+                <div class="col-12 col-md-4">
+                  <q-input :model-value="selectedDenuncia.numero" label="Numero" dense outlined readonly />
                 </div>
                 <div class="col-12">
                   <q-input :model-value="personaNombre(selectedDenuncia.persona)" label="Persona" dense outlined readonly />
@@ -208,7 +214,7 @@
               >
                 <template #body-cell-fecha="props">
                   <q-td :props="props">
-                    {{ formatDateTime(props.row.fechaHora) }}
+                    {{ formatDateTime(props.row.fecha_hora) }}
                   </q-td>
                 </template>
 
@@ -246,9 +252,6 @@
         <q-card-section>
           <q-form class="q-gutter-lg" @submit.prevent="save">
             <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
-                <q-input v-model="form.fec_denuncia" type="datetime-local" :label="$requiredLabel('Fecha y hora')" outlined dense />
-              </div>
               <div class="col-12 col-md-4">
                 <q-input
                   v-model="form.persona_cinit"
@@ -466,7 +469,7 @@
         <q-card-section class="bg-positive text-white">
           <div class="text-h6">Registrar log</div>
           <div class="text-caption text-white-7">
-            {{ selectedDenuncia ? `${selectedDenuncia.numero} - ${personaNombre(selectedDenuncia.persona)}` : '' }}
+            {{ selectedDenuncia ? `${selectedDenuncia.codigo || selectedDenuncia.numero} - ${personaNombre(selectedDenuncia.persona)}` : '' }}
           </div>
         </q-card-section>
 
@@ -633,6 +636,7 @@ export default {
       personaSeleccionadaForm: null,
       columns: [
         { name: 'numero', label: 'Nro', field: 'numero', align: 'left', sortable: true },
+        { name: 'codigo', label: 'Codigo', field: 'codigo', align: 'left', sortable: true },
         { name: 'fecha', label: 'Fecha', field: 'fec_denuncia', align: 'left', sortable: true },
         { name: 'persona', label: 'Persona', field: 'persona', align: 'left' },
         { name: 'mascota', label: 'Mascota', field: 'mascota', align: 'left' },
@@ -642,7 +646,7 @@ export default {
         { name: 'actions', label: 'Acciones', field: 'actions', align: 'right' }
       ],
       logColumns: [
-        { name: 'fecha', label: 'Fecha', field: 'fechaHora', align: 'left' },
+        { name: 'fecha', label: 'Fecha', field: 'fecha_hora', align: 'left' },
         { name: 'proceso', label: 'Proceso', field: 'proceso', align: 'left' },
         { name: 'actividad', label: 'Actividad', field: 'actividad', align: 'left' },
         { name: 'resultado', label: 'Resultado', field: 'resultado', align: 'left' }
@@ -658,6 +662,7 @@ export default {
 
       return this.rows.filter(row => {
         return [
+          row.codigo,
           row.numero,
           row.estado,
           this.personaNombre(row.persona),
@@ -775,6 +780,7 @@ export default {
       }
 
       this.form = emptyForm()
+      this.form.fec_denuncia = moment().format('YYYY-MM-DDTHH:mm')
       this.personaSeleccionadaForm = null
       this.mascotaOptions = []
       this.mascotaSeleccionadaOption = null
@@ -789,6 +795,7 @@ export default {
       this.saving = true
       try {
         await this.buscarPersonaPorDocumento()
+        this.form.fec_denuncia = moment().format('YYYY-MM-DDTHH:mm')
 
         if (!this.form.mascota_id && (!this.form.especie_id || !this.form.raza_id)) {
           this.notifyError(null, 'Seleccione una mascota o complete especie y raza.')

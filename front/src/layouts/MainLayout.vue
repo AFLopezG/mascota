@@ -1,7 +1,7 @@
 <template>
   <q-layout view="hHh Lpr fFf" class="app-shell">
     <q-header class="app-shell__header">
-      <q-toolbar class="q-py-sm q-px-md">
+      <q-toolbar class="q-py-sm q-px-md app-shell__toolbar">
         <q-btn
           flat
           round
@@ -12,7 +12,7 @@
           @click="drawerOpen = !drawerOpen"
         />
 
-        <div class="row items-center q-gutter-sm no-wrap">
+        <div class="row items-center q-gutter-sm app-shell__brand">
           <q-avatar rounded size="44px" class="bg-white text-primary">
             <img src="/img/zoonosis.jpg" alt="Logo del sistema" />
           </q-avatar>
